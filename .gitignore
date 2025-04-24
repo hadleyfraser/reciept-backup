@@ -1,0 +1,64 @@
+# Built files
+/build/
+*/build/
+
+# Local configuration files
+/local.properties
+/.idea/
+.gradle/
+/captures/
+/*.iml
+
+# Firebase secrets
+google-services.json
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Keystore files (if using a custom signing key)
+*.jks
+*.keystore
+
+# Kotlin/Java/Jetpack Compose
+*.log
+*.class
+*.dex
+*.apk
+*.ap_
+*.aar
+
+# Android Studio
+.idea/caches
+.idea/libraries
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/compiler.xml
+.idea/gradle.xml
+.idea/misc.xml
+.idea/.name
+*.iws
+
+# Gradle
+.gradle
+gradle-app.setting
+gradlew
+gradlew.bat
+
+# Jetpack Compose preview cache
+.idea/assetWizardSettings.xml
+
+# Crashlytics & Firebase analytics debug files
+crashlytics-build.properties
+
+# Node/npm if used for tooling
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Misc
+*.orig
+*.rej
