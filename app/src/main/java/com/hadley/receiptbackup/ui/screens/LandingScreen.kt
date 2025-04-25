@@ -23,7 +23,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun LandingScreen(navController: NavController, viewModel: ReceiptItemViewModel = viewModel()) {
     val context = LocalContext.current as Activity
-    var isLoading by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(true) }
 
     // Handle sign-in result
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -34,7 +34,6 @@ fun LandingScreen(navController: NavController, viewModel: ReceiptItemViewModel 
             if (idToken != null) {
                 isLoading = true
                 GoogleAuthManager.firebaseAuthWithGoogle(idToken) { user ->
-                    isLoading = false
                     if (user != null) {
                         viewModel.clearItems()
                         viewModel.loadReceiptsFromFirestore(context)
@@ -42,6 +41,7 @@ fun LandingScreen(navController: NavController, viewModel: ReceiptItemViewModel 
                             popUpTo("landing") { inclusive = true }
                         }
                     } else {
+                        isLoading = false
                         Log.e("LandingScreen", "Firebase sign-in failed")
                     }
                 }
@@ -55,7 +55,6 @@ fun LandingScreen(navController: NavController, viewModel: ReceiptItemViewModel 
     // Auto redirect if already signed in
     LaunchedEffect(Unit) {
         if (GoogleAuthManager.getCurrentUser() != null) {
-            isLoading = true
             try {
                 withContext(Dispatchers.IO) {
                     viewModel.loadCachedReceipts(context)
@@ -65,9 +64,9 @@ fun LandingScreen(navController: NavController, viewModel: ReceiptItemViewModel 
                 }
             } catch (e: Exception) {
                 Log.e("LandingScreen", "Failed to load cached receipts", e)
-            } finally {
-                isLoading = false
             }
+        } else {
+            isLoading = false
         }
     }
 
