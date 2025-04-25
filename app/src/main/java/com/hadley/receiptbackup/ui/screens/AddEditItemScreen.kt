@@ -20,6 +20,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.hadley.receiptbackup.data.model.ReceiptItem
@@ -177,6 +181,7 @@ fun AddEditItemScreen(
                 onValueChange = { name = it },
                 label = { Text("Item Name") },
                 modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 enabled = !isUploading
             )
 
@@ -185,6 +190,7 @@ fun AddEditItemScreen(
                 onValueChange = { store = it },
                 label = { Text("Store") },
                 modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 enabled = !isUploading
             )
 
@@ -197,6 +203,10 @@ fun AddEditItemScreen(
                 label = { Text("Price") },
                 leadingIcon = { Text("$") },
                 modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Done
+                ),
                 singleLine = true,
                 enabled = !isUploading
             )
