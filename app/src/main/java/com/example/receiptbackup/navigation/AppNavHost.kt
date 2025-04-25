@@ -38,22 +38,22 @@ fun AppNavHost(
 
             composable(
                 route = "detail/{itemId}",
-                arguments = listOf(navArgument("itemId") { type = NavType.IntType })
+                arguments = listOf(navArgument("itemId") { type = NavType.StringType })
             ) { backStackEntry ->
-                val itemId = backStackEntry.arguments?.getInt("itemId") ?: -1
+                val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
                 DetailScreen(navController, itemId, receiptItemViewModel)
             }
 
             composable(
                 route = "edit/{itemId}",
-                arguments = listOf(navArgument("itemId") { type = NavType.IntType })
+                arguments = listOf(navArgument("itemId") { type = NavType.StringType })
             ) { backStackEntry ->
-                val itemId = backStackEntry.arguments?.getInt("itemId") ?: -1
-                EditItemScreen(navController = navController, itemId = itemId, viewModel = receiptItemViewModel)
+                val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
+                AddEditItemScreen(navController, receiptItemViewModel, receiptItemViewModel.getItemById((itemId)))
             }
 
             composable("add") {
-                AddItemScreen(navController, receiptItemViewModel)
+                AddEditItemScreen(navController, receiptItemViewModel)
             }
 
             composable(

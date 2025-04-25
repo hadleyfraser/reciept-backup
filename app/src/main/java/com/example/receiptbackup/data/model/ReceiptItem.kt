@@ -3,7 +3,7 @@ package com.example.receiptbackup.data.model
 import java.time.LocalDate
 
 data class ReceiptItem(
-    val id: Int,
+    val id: String,
     val name: String,
     val store: String,
     val date: LocalDate,
@@ -21,7 +21,7 @@ fun ReceiptItem.toMap(): Map<String, Any?> = mapOf(
 )
 
 // 🔁 Convert Firestore document back to ReceiptItem
-fun Map<String, Any?>.toReceiptItem(id: Int): ReceiptItem {
+fun Map<String, Any?>.toReceiptItem(id: String): ReceiptItem {
     return ReceiptItem(
         id = id,
         name = this["name"] as? String ?: "",

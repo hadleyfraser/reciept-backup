@@ -19,7 +19,7 @@ import com.example.receiptbackup.data.repository.ReceiptItemViewModel
 import java.text.DecimalFormat
 
 @Composable
-fun DetailScreen(navController: NavController, itemId: Int, viewModel: ReceiptItemViewModel) {
+fun DetailScreen(navController: NavController, itemId: String, viewModel: ReceiptItemViewModel) {
     val item = viewModel.getItemById(itemId)
     var showConfirmDialog by remember { mutableStateOf(false) }
 
