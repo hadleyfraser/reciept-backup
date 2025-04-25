@@ -1,4 +1,4 @@
-package com.example.receiptbackup.ui.screens
+package com.hadley.receiptbackup.ui.screens
 
 import android.app.Activity
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -17,9 +17,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.receiptbackup.auth.GoogleAuthManager
-import com.example.receiptbackup.data.repository.ReceiptItemViewModel
-import com.example.receiptbackup.ui.components.ReceiptItemRow
+import coil.Coil
+import com.hadley.receiptbackup.auth.GoogleAuthManager
+import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
+import com.hadley.receiptbackup.ui.components.ReceiptItemRow
+import kotlinx.coroutines.launch
 import java.time.format.TextStyle
 import java.util.*
 
@@ -44,6 +46,7 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
 
     val focusManager = LocalFocusManager.current
     val activity = LocalContext.current as Activity
+    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
@@ -51,9 +54,17 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
                 title = { Text("Receipts") },
                 actions = {
                     IconButton(onClick = {
-                        GoogleAuthManager.signOut(activity) {
-                            navController.navigate("landing") {
-                                popUpTo("list") { inclusive = true }
+                        coroutineScope.launch {
+                            viewModel.clearItems()
+                            viewModel.clearLocalCache(activity)
+
+                            // Clear image cache
+                            Coil.imageLoader(activity).diskCache?.clear()
+
+                            GoogleAuthManager.signOut(activity, viewModel) {
+                                navController.navigate("landing") {
+                                    popUpTo("list") { inclusive = true }
+                                }
                             }
                         }
                     }) {

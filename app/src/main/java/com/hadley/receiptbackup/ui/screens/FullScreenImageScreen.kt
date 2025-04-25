@@ -1,4 +1,4 @@
-package com.example.receiptbackup.ui.screens
+package com.hadley.receiptbackup.ui.screens
 
 import android.net.Uri
 import androidx.compose.animation.core.animateFloatAsState
@@ -17,7 +17,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 

@@ -1,4 +1,4 @@
-package com.example.receiptbackup
+package com.hadley.receiptbackup
 
 import org.junit.Test
 

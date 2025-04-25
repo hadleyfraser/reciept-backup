@@ -1,4 +1,4 @@
-package com.example.receiptbackup.data.model
+package com.hadley.receiptbackup.data.model
 
 import java.time.LocalDate
 

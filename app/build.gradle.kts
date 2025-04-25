@@ -9,11 +9,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.receiptbackup"
+    namespace = "com.hadley.receiptbackup"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.receiptbackup"
+        applicationId = "com.hadley.receiptbackup"
         minSdk = 33
         targetSdk = 35
         versionCode = 1
@@ -75,6 +75,9 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.material3)
     implementation(libs.material.icons)
+    implementation(libs.moshi)
+    implementation(libs.moshi.kotlin)
+    implementation(libs.androidx.datastore.preferences)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

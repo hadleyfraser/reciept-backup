@@ -1,4 +1,4 @@
-package com.example.receiptbackup.navigation
+package com.hadley.receiptbackup.navigation
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
@@ -6,8 +6,8 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
-import com.example.receiptbackup.data.repository.ReceiptItemViewModel
-import com.example.receiptbackup.ui.screens.*
+import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
+import com.hadley.receiptbackup.ui.screens.*
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.asPaddingValues

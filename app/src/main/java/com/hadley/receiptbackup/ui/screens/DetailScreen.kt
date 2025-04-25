@@ -1,4 +1,4 @@
-package com.example.receiptbackup.ui.screens
+package com.hadley.receiptbackup.ui.screens
 
 import android.net.Uri
 import androidx.compose.foundation.Image
@@ -12,10 +12,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
-import com.example.receiptbackup.data.repository.ReceiptItemViewModel
+import coil.request.CachePolicy
+import coil.request.ImageRequest
+import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
 import java.text.DecimalFormat
 
 @Composable
@@ -57,17 +61,35 @@ fun DetailScreen(navController: NavController, itemId: String, viewModel: Receip
                 .padding(16.dp)
         ) {
             if (!item.imageUrl.isNullOrEmpty()) {
-                Image(
-                    painter = rememberAsyncImagePainter(item.imageUrl),
-                    contentDescription = "Receipt Image",
+                val painter = rememberAsyncImagePainter(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(item.imageUrl)
+                        .diskCachePolicy(CachePolicy.ENABLED)
+                        .crossfade(true)
+                        .build()
+                )
+                val state = painter.state
+
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp)
                         .clickable {
                             navController.navigate("image?uri=${Uri.encode(item.imageUrl)}")
                         },
-                    contentScale = ContentScale.Crop
-                )
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painter,
+                        contentDescription = "Receipt Image",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                    if (state is AsyncImagePainter.State.Loading) {
+                        CircularProgressIndicator()
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
             }
 

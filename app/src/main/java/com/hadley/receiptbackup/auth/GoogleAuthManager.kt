@@ -1,10 +1,11 @@
-package com.example.receiptbackup.auth
+package com.hadley.receiptbackup.auth
 
 import android.app.Activity
 import android.util.Log
 import com.google.android.gms.auth.api.signin.*
 import com.google.firebase.auth.*
-import com.example.receiptbackup.BuildConfig
+import com.hadley.receiptbackup.BuildConfig
+import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
 
 object GoogleAuthManager {
     fun getSignInClient(activity: Activity): GoogleSignInClient {
@@ -32,9 +33,10 @@ object GoogleAuthManager {
         return FirebaseAuth.getInstance().currentUser
     }
 
-    fun signOut(activity: Activity, onComplete: () -> Unit) {
+    fun signOut(activity: Activity, viewModel: ReceiptItemViewModel, onComplete: () -> Unit) {
         getSignInClient(activity).signOut().addOnCompleteListener {
             FirebaseAuth.getInstance().signOut()
+            viewModel.clearItems()
             onComplete()
         }
     }

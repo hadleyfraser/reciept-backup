@@ -1,0 +1,142 @@
+package com.hadley.receiptbackup.data.repository
+
+import android.content.Context
+import android.util.Log
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.hadley.receiptbackup.data.local.ReceiptItemDataStore
+import com.hadley.receiptbackup.data.model.ReceiptItem
+import com.hadley.receiptbackup.data.model.toMap
+import com.hadley.receiptbackup.data.model.toReceiptItem
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.ktx.storage
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+
+class ReceiptItemViewModel : ViewModel() {
+    private val _items = MutableStateFlow<List<ReceiptItem>>(emptyList())
+    val items: StateFlow<List<ReceiptItem>> = _items
+
+    fun loadCachedReceipts(context: Context) {
+        viewModelScope.launch {
+            try {
+                _items.value = ReceiptItemDataStore.getReceipts(context).first()
+            } catch (e: Exception) {
+                Log.e("ViewModel", "Failed to load cached receipts", e)
+                _items.value = emptyList()
+            }
+        }
+    }
+
+    fun loadReceiptsFromFirestore(context: Context) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val firestore = Firebase.firestore
+
+        firestore.collection("users")
+            .document(uid)
+            .collection("receipts")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val loadedItems = snapshot.documents.map { doc ->
+                    val data = doc.data ?: emptyMap()
+                    data.toReceiptItem(doc.id)
+                }
+                _items.value = loadedItems
+
+                // Save to local cache
+                viewModelScope.launch {
+                    ReceiptItemDataStore.saveReceipts(context, loadedItems)
+                }
+            }
+            .addOnFailureListener { e ->
+                e.printStackTrace()
+            }
+    }
+
+    fun clearItems() {
+        _items.value = emptyList()
+    }
+
+    suspend fun clearLocalCache(context: Context) {
+        ReceiptItemDataStore.clearReceipts(context)
+    }
+
+    fun addItem(item: ReceiptItem) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        Firebase.firestore.collection("users")
+            .document(uid)
+            .collection("receipts")
+            .add(item.toMap())
+            .addOnSuccessListener { docRef ->
+                val withId = item.copy(id = docRef.id)
+                _items.value += withId
+            }
+    }
+
+    fun updateItem(context: Context, updated: ReceiptItem) {
+        val previous = _items.value.find { it.id == updated.id }
+        _items.value = _items.value.map {
+            if (it.id == updated.id) updated else it
+        }
+
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val db = Firebase.firestore
+
+        db.collection("users")
+            .document(uid)
+            .collection("receipts")
+            .document(updated.id)
+            .set(updated.toMap())
+            .addOnSuccessListener {
+                // Optionally re-save to local cache
+                viewModelScope.launch {
+                    ReceiptItemDataStore.saveReceipts(context, _items.value)
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("ReceiptItemViewModel", "Failed to update Firestore", e)
+            }
+    }
+
+    fun deleteItem(itemId: String) {
+        val item = _items.value.find { it.id == itemId }
+
+        // Update local state
+        _items.value = _items.value.filterNot { it.id == itemId }
+
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val db = Firebase.firestore
+        val storage = Firebase.storage
+
+        // Delete from Firestore
+        db.collection("users")
+            .document(uid)
+            .collection("receipts")
+            .document(itemId)
+            .delete()
+
+        // If image exists, delete from Firebase Storage
+        item?.imageUrl?.let { url ->
+            try {
+                val imageRef = storage.getReferenceFromUrl(url)
+                imageRef.delete()
+                    .addOnSuccessListener {
+                        Log.d("deleteItem", "Image deleted successfully")
+                    }
+                    .addOnFailureListener { e ->
+                        Log.w("deleteItem", "Failed to delete image", e)
+                    }
+            } catch (e: IllegalArgumentException) {
+                Log.e("deleteItem", "Invalid image URL: $url", e)
+            }
+        }
+    }
+
+    fun getItemById(id: String): ReceiptItem? {
+        return _items.value.find { it.id == id }
+    }
+}

@@ -1,4 +1,4 @@
-package com.example.receiptbackup.ui.screens
+package com.hadley.receiptbackup.ui.screens
 
 import android.app.Activity
 import android.util.Log
@@ -11,14 +11,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.receiptbackup.auth.GoogleAuthManager
-import com.example.receiptbackup.data.repository.ReceiptItemViewModel
+import com.hadley.receiptbackup.auth.GoogleAuthManager
+import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
-fun LandingScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
+fun LandingScreen(navController: NavController, viewModel: ReceiptItemViewModel = viewModel()) {
     val context = LocalContext.current as Activity
     var isLoading by remember { mutableStateOf(false) }
 
@@ -33,6 +36,8 @@ fun LandingScreen(navController: NavController, viewModel: ReceiptItemViewModel)
                 GoogleAuthManager.firebaseAuthWithGoogle(idToken) { user ->
                     isLoading = false
                     if (user != null) {
+                        viewModel.clearItems()
+                        viewModel.loadReceiptsFromFirestore(context)
                         navController.navigate("list") {
                             popUpTo("landing") { inclusive = true }
                         }
@@ -50,8 +55,18 @@ fun LandingScreen(navController: NavController, viewModel: ReceiptItemViewModel)
     // Auto redirect if already signed in
     LaunchedEffect(Unit) {
         if (GoogleAuthManager.getCurrentUser() != null) {
-            navController.navigate("list") {
-                popUpTo("landing") { inclusive = true }
+            isLoading = true
+            try {
+                withContext(Dispatchers.IO) {
+                    viewModel.loadCachedReceipts(context)
+                }
+                navController.navigate("list") {
+                    popUpTo("landing") { inclusive = true }
+                }
+            } catch (e: Exception) {
+                Log.e("LandingScreen", "Failed to load cached receipts", e)
+            } finally {
+                isLoading = false
             }
         }
     }
