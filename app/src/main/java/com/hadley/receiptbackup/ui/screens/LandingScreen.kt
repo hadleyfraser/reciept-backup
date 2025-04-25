@@ -17,6 +17,7 @@ import com.hadley.receiptbackup.auth.GoogleAuthManager
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
+import com.hadley.receiptbackup.ui.components.GoogleSignInButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -75,15 +76,13 @@ fun LandingScreen(navController: NavController, viewModel: ReceiptItemViewModel 
         if (isLoading) {
             CircularProgressIndicator()
         } else {
-            Button(
+            GoogleSignInButton(
                 onClick = {
                     val signInIntent = GoogleAuthManager.getSignInClient(context).signInIntent
                     launcher.launch(signInIntent)
                 },
                 modifier = Modifier.padding(16.dp)
-            ) {
-                Text("Sign in with Google")
-            }
+            )
         }
     }
 }
