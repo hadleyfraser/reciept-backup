@@ -26,8 +26,7 @@ class ReceiptItemViewModel : ViewModel() {
             try {
                 _items.value = ReceiptItemDataStore.getReceipts(context).first()
             } catch (e: Exception) {
-                Log.e("ViewModel", "Failed to load cached receipts", e)
-                _items.value = emptyList()
+                Log.e("ReceiptItemViewModel", "Error loading cached receipts", e)
             }
         }
     }
@@ -47,7 +46,6 @@ class ReceiptItemViewModel : ViewModel() {
                 }
                 _items.value = loadedItems
 
-                // Save to local cache
                 viewModelScope.launch {
                     ReceiptItemDataStore.saveReceipts(context, loadedItems)
                 }
@@ -92,7 +90,15 @@ class ReceiptItemViewModel : ViewModel() {
             .document(updated.id)
             .set(updated.toMap())
             .addOnSuccessListener {
-                // Optionally re-save to local cache
+                val storage = Firebase.storage
+                if (previous?.imageUrl != null && previous.imageUrl != updated.imageUrl && !updated.imageUrl.isNullOrEmpty()) {
+                    try {
+                        val oldImageRef = storage.getReferenceFromUrl(previous.imageUrl!!)
+                        oldImageRef.delete()
+                    } catch (e: IllegalArgumentException) {
+                        Log.e("ReceiptItemViewModel", "Invalid previous image URL: \${previous.imageUrl}", e)
+                    }
+                }
                 viewModelScope.launch {
                     ReceiptItemDataStore.saveReceipts(context, _items.value)
                 }
@@ -105,33 +111,24 @@ class ReceiptItemViewModel : ViewModel() {
     fun deleteItem(itemId: String) {
         val item = _items.value.find { it.id == itemId }
 
-        // Update local state
         _items.value = _items.value.filterNot { it.id == itemId }
 
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         val db = Firebase.firestore
         val storage = Firebase.storage
 
-        // Delete from Firestore
         db.collection("users")
             .document(uid)
             .collection("receipts")
             .document(itemId)
             .delete()
 
-        // If image exists, delete from Firebase Storage
         item?.imageUrl?.let { url ->
             try {
                 val imageRef = storage.getReferenceFromUrl(url)
                 imageRef.delete()
-                    .addOnSuccessListener {
-                        Log.d("deleteItem", "Image deleted successfully")
-                    }
-                    .addOnFailureListener { e ->
-                        Log.w("deleteItem", "Failed to delete image", e)
-                    }
             } catch (e: IllegalArgumentException) {
-                Log.e("deleteItem", "Invalid image URL: $url", e)
+                Log.e("ReceiptItemViewModel", "Invalid image URL: $url", e)
             }
         }
     }
