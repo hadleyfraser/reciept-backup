@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -32,6 +33,12 @@ import java.util.*
 fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
     val items by viewModel.items.collectAsState()
 
+    var isInitialLoad by remember { mutableStateOf(true) }
+    LaunchedEffect(items) {
+        if (isInitialLoad && items.isNotEmpty()) {
+            isInitialLoad = false
+        }
+    }
     var searchQuery by remember { mutableStateOf("") }
     var selectedStore by remember { mutableStateOf("All") }
     val stores = listOf("All") + items.map { it.store }.distinct().sorted()
@@ -60,7 +67,6 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
                             viewModel.clearItems()
                             viewModel.clearLocalCache(activity)
 
-                            // Clear image cache
                             Coil.imageLoader(activity).diskCache?.clear()
 
                             GoogleAuthManager.signOut(activity, viewModel) {
@@ -106,7 +112,6 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Store dropdown
                 var expanded by remember { mutableStateOf(false) }
 
                 ExposedDropdownMenuBox(
@@ -121,7 +126,9 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
                         trailingIcon = {
                             ExposedDropdownMenuDefaults.TrailingIcon(expanded)
                         },
-                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
                     )
 
                     ExposedDropdownMenu(
@@ -142,21 +149,43 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                LazyColumn {
-                    grouped.forEach { (monthYear, receipts) ->
-                        stickyHeader {
-                            Text(
-                                text = monthYear,
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 8.dp)
-                            )
+                when {
+                    isInitialLoad -> {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            CircularProgressIndicator()
                         }
+                    }
+                    filteredItems.isEmpty() -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(top = 32.dp),
+                            contentAlignment = Alignment.TopCenter
+                        ) {
+                            Text("No receipts saved")
+                        }
+                    }
+                    else -> {
+                        LazyColumn {
+                            grouped.forEach { (monthYear, receipts) ->
+                                stickyHeader {
+                                    Text(
+                                        text = monthYear,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 8.dp)
+                                    )
+                                }
 
-                        items(receipts) { item ->
-                            ReceiptItemRow(item = item) {
-                                navController.navigate("detail/${item.id}")
+                                items(receipts) { item ->
+                                    ReceiptItemRow(item = item) {
+                                        navController.navigate("detail/${item.id}")
+                                    }
+                                }
                             }
                         }
                     }
