@@ -2,6 +2,7 @@ package com.hadley.receiptbackup.ui.screens
 
 import android.app.Activity
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,10 +18,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.Coil
+import com.hadley.receiptbackup.R
 import com.hadley.receiptbackup.auth.GoogleAuthManager
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
 import com.hadley.receiptbackup.ui.components.ReceiptItemRow
@@ -60,7 +63,17 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Receipts") },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Image(
+                            painter = painterResource(id = R.drawable.logo),
+                            contentDescription = "App Logo",
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Receipts")
+                    }
+                },
                 actions = {
                     IconButton(onClick = {
                         coroutineScope.launch {

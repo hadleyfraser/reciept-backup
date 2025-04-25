@@ -4,12 +4,14 @@ import android.app.Activity
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -17,6 +19,7 @@ import com.hadley.receiptbackup.auth.GoogleAuthManager
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
+import com.hadley.receiptbackup.R
 import com.hadley.receiptbackup.ui.components.GoogleSignInButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -76,13 +79,30 @@ fun LandingScreen(navController: NavController, viewModel: ReceiptItemViewModel 
         if (isLoading) {
             CircularProgressIndicator()
         } else {
-            GoogleSignInButton(
-                onClick = {
-                    val signInIntent = GoogleAuthManager.getSignInClient(context).signInIntent
-                    launcher.launch(signInIntent)
-                },
-                modifier = Modifier.padding(16.dp)
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "App Logo",
+                    modifier = Modifier
+                        .size(150.dp)
+                        .padding(bottom = 32.dp)
+                )
+
+                Text(text = "Receipt Backup", style = MaterialTheme.typography.headlineLarge)
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                GoogleSignInButton(
+                    onClick = {
+                        val signInIntent = GoogleAuthManager.getSignInClient(context).signInIntent
+                        launcher.launch(signInIntent)
+                    },
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
         }
     }
 }
