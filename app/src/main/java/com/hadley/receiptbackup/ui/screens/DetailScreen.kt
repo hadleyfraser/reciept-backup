@@ -14,10 +14,13 @@ import com.hadley.receiptbackup.ui.components.LabelValueText
 import com.hadley.receiptbackup.ui.components.ReceiptImage
 import java.text.DecimalFormat
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(navController: NavController, itemId: String, viewModel: ReceiptItemViewModel) {
     val item = viewModel.getItemById(itemId)
     var showConfirmDialog by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var isSheetOpen by remember { mutableStateOf(false) }
 
     val formatter = DecimalFormat("0.00")
 
@@ -26,15 +29,27 @@ fun DetailScreen(navController: NavController, itemId: String, viewModel: Receip
         return
     }
 
+    if (isSheetOpen) {
+        ModalBottomSheet(
+            onDismissRequest = { isSheetOpen = false },
+            sheetState = sheetState
+        ) {
+            AddEditItemScreen(
+                navController = navController,
+                viewModel = viewModel,
+                existingItem = item,
+                onFinish = { isSheetOpen = false }
+            )
+        }
+    }
+
     Scaffold(
         floatingActionButton = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.padding(bottom = 16.dp)
             ) {
-                FloatingActionButton(onClick = {
-                    navController.navigate("edit/${item.id}")
-                }) {
+                FloatingActionButton(onClick = { isSheetOpen = true }) {
                     Icon(Icons.Default.Edit, contentDescription = "Edit")
                 }
 

@@ -20,8 +20,12 @@ import kotlinx.coroutines.launch
 class ReceiptItemViewModel : ViewModel() {
     private val _items = MutableStateFlow<List<ReceiptItem>>(emptyList())
     val items: StateFlow<List<ReceiptItem>> = _items
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
 
     fun loadCachedReceipts(context: Context) {
         viewModelScope.launch {
@@ -141,5 +145,9 @@ class ReceiptItemViewModel : ViewModel() {
 
     fun getItemById(id: String): ReceiptItem? {
         return _items.value.find { it.id == id }
+    }
+
+    fun updateSearchQuery(newQuery: String) {
+        _searchQuery.value = newQuery
     }
 }

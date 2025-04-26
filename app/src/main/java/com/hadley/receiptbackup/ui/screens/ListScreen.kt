@@ -8,6 +8,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -38,8 +39,12 @@ import java.util.*
 fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
     val items by viewModel.items.collectAsState()
     val isLoadingReceipts by viewModel.isLoading.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val listState = rememberLazyListState()
 
-    var searchQuery by remember { mutableStateOf("") }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var isSheetOpen by remember { mutableStateOf(false) }
+
     var selectedStore by remember { mutableStateOf("All") }
     val stores = listOf("All") + items.map { it.store }.distinct().sorted()
 
@@ -56,6 +61,19 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
     val focusManager = LocalFocusManager.current
     val activity = LocalContext.current as Activity
     val coroutineScope = rememberCoroutineScope()
+
+    if (isSheetOpen) {
+        ModalBottomSheet(
+            onDismissRequest = { isSheetOpen = false },
+            sheetState = sheetState
+        ) {
+            AddEditItemScreen(
+                navController = navController,
+                viewModel = viewModel,
+                onFinish = { isSheetOpen = false }
+            )
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -92,7 +110,7 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { navController.navigate("add") }) {
+            FloatingActionButton(onClick = { isSheetOpen = true }) {
                 Icon(Icons.Default.Add, contentDescription = "Add Item")
             }
         }
@@ -114,7 +132,7 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
             ) {
                 OutlinedTextField(
                     value = searchQuery,
-                    onValueChange = { searchQuery = it },
+                    onValueChange = { viewModel.updateSearchQuery(it) },
                     label = { Text("Search by name") },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
@@ -179,7 +197,7 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
                         }
                     }
                     else -> {
-                        LazyColumn {
+                        LazyColumn(state = listState) {
                             grouped.forEach { (monthYear, receipts) ->
                                 stickyHeader {
                                     Text(

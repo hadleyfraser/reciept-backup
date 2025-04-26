@@ -45,18 +45,6 @@ fun AppNavHost(
             }
 
             composable(
-                route = "edit/{itemId}",
-                arguments = listOf(navArgument("itemId") { type = NavType.StringType })
-            ) { backStackEntry ->
-                val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
-                AddEditItemScreen(navController, receiptItemViewModel, receiptItemViewModel.getItemById((itemId)))
-            }
-
-            composable("add") {
-                AddEditItemScreen(navController, receiptItemViewModel)
-            }
-
-            composable(
                 route = "image?uri={uri}",
                 arguments = listOf(navArgument("uri") { type = NavType.StringType })
             ) { backStackEntry ->

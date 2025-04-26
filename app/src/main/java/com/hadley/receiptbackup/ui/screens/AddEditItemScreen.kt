@@ -35,7 +35,8 @@ import java.util.*
 fun AddEditItemScreen(
     navController: NavController,
     viewModel: ReceiptItemViewModel,
-    existingItem: ReceiptItem? = null
+    existingItem: ReceiptItem? = null,
+    onFinish: () -> Unit
 ) {
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
@@ -153,7 +154,6 @@ fun AddEditItemScreen(
             Button(
                 onClick = { submitReceipt(
                     context = context,
-                    navController = navController,
                     viewModel = viewModel,
                     existingItem = existingItem,
                     name = name,
@@ -161,7 +161,8 @@ fun AddEditItemScreen(
                     price = price,
                     date = date.value,
                     imageUri = imageUri,
-                    setIsUploading = { isUploading = it }
+                    setIsUploading = { isUploading = it },
+                    onFinish = onFinish
                 )},
                 modifier = Modifier.align(Alignment.End),
                 enabled = !isUploading

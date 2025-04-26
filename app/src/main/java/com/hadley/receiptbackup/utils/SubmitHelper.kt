@@ -4,7 +4,6 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
-import androidx.navigation.NavController
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
@@ -16,7 +15,6 @@ import java.util.*
 
 fun submitReceipt(
     context: Context,
-    navController: NavController,
     viewModel: ReceiptItemViewModel,
     existingItem: ReceiptItem?,
     name: String,
@@ -24,7 +22,8 @@ fun submitReceipt(
     price: String,
     date: LocalDate,
     imageUri: Uri?,
-    setIsUploading: (Boolean) -> Unit
+    setIsUploading: (Boolean) -> Unit,
+    onFinish: () -> Unit
 ) {
     val formatter = DecimalFormat("0.00")
     val parsedPrice = price.toDoubleOrNull()
@@ -51,7 +50,7 @@ fun submitReceipt(
         else viewModel.updateItem(context, item)
 
         setIsUploading(false)
-        navController.popBackStack()
+        onFinish()
     }
 
     if (imageUri != null) {
