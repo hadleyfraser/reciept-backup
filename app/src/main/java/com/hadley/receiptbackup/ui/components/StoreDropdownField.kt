@@ -1,11 +1,16 @@
 package com.hadley.receiptbackup.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import com.hadley.receiptbackup.utils.getDropdownMaxHeight
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -16,6 +21,8 @@ fun StoreDropdownField(
     enabled: Boolean
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val fieldCoordinates = remember { mutableStateOf<LayoutCoordinates?>(null) }
+    val dropdownOffsetY = getDropdownMaxHeight(fieldCoordinates.value)
 
     val filteredStores = allStores.filter {
         it.contains(store, ignoreCase = true)
@@ -34,7 +41,10 @@ fun StoreDropdownField(
             label = { Text("Store") },
             modifier = Modifier
                 .menuAnchor()
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .onGloballyPositioned { coordinates ->
+                    fieldCoordinates.value = coordinates
+                }            ,
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded)
             },
@@ -46,7 +56,8 @@ fun StoreDropdownField(
         if (filteredStores.isNotEmpty()) {
             ExposedDropdownMenu(
                 expanded = expanded,
-                onDismissRequest = { expanded = false }
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.heightIn(max = dropdownOffsetY)
             ) {
                 filteredStores.forEach { matchedStore ->
                     DropdownMenuItem(
