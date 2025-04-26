@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -40,12 +41,13 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
     val items by viewModel.items.collectAsState()
     val isLoadingReceipts by viewModel.isLoading.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val selectedStore by viewModel.selectedStore.collectAsState()
+
     val listState = rememberLazyListState()
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var isSheetOpen by remember { mutableStateOf(false) }
 
-    var selectedStore by remember { mutableStateOf("All") }
     val stores = listOf("All") + items.map { it.store }.distinct().sorted()
 
     val filteredItems = items
@@ -134,6 +136,16 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
                     value = searchQuery,
                     onValueChange = { viewModel.updateSearchQuery(it) },
                     label = { Text("Search by name") },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { viewModel.updateSearchQuery("") }) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Clear search"
+                                )
+                            }
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
                 )
@@ -167,7 +179,7 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
                             DropdownMenuItem(
                                 text = { Text(store) },
                                 onClick = {
-                                    selectedStore = store
+                                    viewModel.updateselectedStore(store)
                                     expanded = false
                                 }
                             )

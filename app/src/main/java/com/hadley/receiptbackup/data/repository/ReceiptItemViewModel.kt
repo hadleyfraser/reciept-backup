@@ -27,6 +27,9 @@ class ReceiptItemViewModel : ViewModel() {
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
 
+    private val _selectedStore = MutableStateFlow("All")
+    val selectedStore: StateFlow<String> = _selectedStore
+
     fun loadCachedReceipts(context: Context) {
         viewModelScope.launch {
             try {
@@ -149,5 +152,9 @@ class ReceiptItemViewModel : ViewModel() {
 
     fun updateSearchQuery(newQuery: String) {
         _searchQuery.value = newQuery
+    }
+
+    fun updateselectedStore(newQuery: String) {
+        _selectedStore.value = newQuery
     }
 }
