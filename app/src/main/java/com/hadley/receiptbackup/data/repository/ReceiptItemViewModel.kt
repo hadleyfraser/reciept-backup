@@ -20,6 +20,8 @@ import kotlinx.coroutines.launch
 class ReceiptItemViewModel : ViewModel() {
     private val _items = MutableStateFlow<List<ReceiptItem>>(emptyList())
     val items: StateFlow<List<ReceiptItem>> = _items
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
 
     fun loadCachedReceipts(context: Context) {
         viewModelScope.launch {
@@ -35,6 +37,8 @@ class ReceiptItemViewModel : ViewModel() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         val firestore = Firebase.firestore
 
+        _isLoading.value = true
+
         firestore.collection("users")
             .document(uid)
             .collection("receipts")
@@ -49,9 +53,11 @@ class ReceiptItemViewModel : ViewModel() {
                 viewModelScope.launch {
                     ReceiptItemDataStore.saveReceipts(context, loadedItems)
                 }
+                _isLoading.value = false
             }
             .addOnFailureListener { e ->
                 e.printStackTrace()
+                _isLoading.value = false
             }
     }
 

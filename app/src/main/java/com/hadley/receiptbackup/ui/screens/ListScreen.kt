@@ -1,6 +1,7 @@
 package com.hadley.receiptbackup.ui.screens
 
 import android.app.Activity
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -35,13 +36,8 @@ import java.util.*
 @Composable
 fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
     val items by viewModel.items.collectAsState()
+    val isLoadingReceipts by viewModel.isLoading.collectAsState()
 
-    var isInitialLoad by remember { mutableStateOf(true) }
-    LaunchedEffect(items) {
-        if (isInitialLoad && items.isNotEmpty()) {
-            isInitialLoad = false
-        }
-    }
     var searchQuery by remember { mutableStateOf("") }
     var selectedStore by remember { mutableStateOf("All") }
     val stores = listOf("All") + items.map { it.store }.distinct().sorted()
@@ -163,7 +159,7 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 when {
-                    isInitialLoad -> {
+                    isLoadingReceipts -> {
                         Column(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally
