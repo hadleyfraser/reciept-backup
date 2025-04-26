@@ -30,6 +30,7 @@ import coil.Coil
 import com.hadley.receiptbackup.R
 import com.hadley.receiptbackup.auth.GoogleAuthManager
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
+import com.hadley.receiptbackup.ui.components.AddEditScreenWrapper
 import com.hadley.receiptbackup.ui.components.ReceiptItemRow
 import kotlinx.coroutines.launch
 import java.time.format.TextStyle
@@ -65,16 +66,11 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
     val coroutineScope = rememberCoroutineScope()
 
     if (isSheetOpen) {
-        ModalBottomSheet(
-            onDismissRequest = { isSheetOpen = false },
-            sheetState = sheetState
-        ) {
-            AddEditItemScreen(
-                navController = navController,
-                viewModel = viewModel,
-                onFinish = { isSheetOpen = false }
-            )
-        }
+        AddEditScreenWrapper(
+            sheetState = sheetState,
+            closeSheet = { isSheetOpen = false },
+            viewModel = viewModel
+        )
     }
 
     Scaffold(

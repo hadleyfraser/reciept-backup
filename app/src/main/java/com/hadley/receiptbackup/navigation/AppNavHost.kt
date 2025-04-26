@@ -43,14 +43,6 @@ fun AppNavHost(
                 val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
                 DetailScreen(navController, itemId, receiptItemViewModel)
             }
-
-            composable(
-                route = "image?uri={uri}",
-                arguments = listOf(navArgument("uri") { type = NavType.StringType })
-            ) { backStackEntry ->
-                val uri = backStackEntry.arguments?.getString("uri") ?: ""
-                FullScreenImageScreen(navController, uri)
-            }
         }
     }
 }
