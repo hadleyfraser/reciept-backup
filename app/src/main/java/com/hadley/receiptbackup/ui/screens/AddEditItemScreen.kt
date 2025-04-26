@@ -219,7 +219,10 @@ fun AddEditItemScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Date: ${date.value}")
-                Button(onClick = { datePickerDialog.show() }, enabled = !isUploading) {
+                Button(onClick = {
+                    datePickerDialog.show()
+                    focusManager.clearFocus()
+                    }, enabled = !isUploading) {
                     Text("Pick Date")
                 }
             }
