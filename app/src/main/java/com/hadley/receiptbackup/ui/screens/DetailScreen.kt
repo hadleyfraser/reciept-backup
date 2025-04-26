@@ -20,6 +20,7 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
+import com.hadley.receiptbackup.ui.components.LabelValueText
 import java.text.DecimalFormat
 
 @Composable
@@ -58,7 +59,8 @@ fun DetailScreen(navController: NavController, itemId: String, viewModel: Receip
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             if (!item.imageUrl.isNullOrEmpty()) {
                 val painter = rememberAsyncImagePainter(
@@ -89,17 +91,12 @@ fun DetailScreen(navController: NavController, itemId: String, viewModel: Receip
                         CircularProgressIndicator()
                     }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
             }
 
             Text(text = item.name, style = MaterialTheme.typography.headlineSmall)
-            Text(text = "Store: ${item.store}", style = MaterialTheme.typography.bodyLarge)
-            Text(text = "Date: ${item.date}", style = MaterialTheme.typography.bodyLarge)
-            Text(
-                text = "Price: $${formatter.format(item.price)}",
-                style = MaterialTheme.typography.bodyLarge
-            )
+            LabelValueText("Store", item.store)
+            LabelValueText("Date", item.date.toString())
+            LabelValueText("Price", formatter.format(item.price))
         }
     }
 

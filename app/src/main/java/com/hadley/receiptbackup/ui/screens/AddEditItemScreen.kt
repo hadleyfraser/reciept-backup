@@ -31,6 +31,7 @@ import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
+import com.hadley.receiptbackup.ui.components.StoreDropdownField
 import java.text.DecimalFormat
 import java.time.LocalDate
 import java.util.*
@@ -52,6 +53,10 @@ fun AddEditItemScreen(
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var isUploading by remember { mutableStateOf(false) }
     val date = remember { mutableStateOf(existingItem?.date ?: LocalDate.now()) }
+    val items by viewModel.items.collectAsState()
+    val allStores = remember(items) {
+        items.map { it.store }.distinct().sorted()
+    }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -185,13 +190,10 @@ fun AddEditItemScreen(
                 enabled = !isUploading
             )
 
-            OutlinedTextField(
-                value = store,
-                onValueChange = { store = it },
-                label = { Text("Store") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                enabled = !isUploading
+            StoreDropdownField(
+                store = store,
+                onStoreChange = { store = it },
+                allStores = allStores
             )
 
             OutlinedTextField(
