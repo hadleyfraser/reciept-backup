@@ -40,10 +40,16 @@ fun AddEditItemScreen(
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
+    val formatter = DecimalFormat("0.00")
 
     var name by remember { mutableStateOf(existingItem?.name ?: "") }
     var store by remember { mutableStateOf(existingItem?.store ?: "") }
-    var price by remember { mutableStateOf(existingItem?.price?.toString() ?: "") }
+    var price by remember {
+        mutableStateOf(
+            if (existingItem?.price != null) formatter.format(existingItem.price)
+            else ""
+        )
+    }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var isUploading by remember { mutableStateOf(false) }
     val date = remember { mutableStateOf(existingItem?.date ?: LocalDate.now()) }
