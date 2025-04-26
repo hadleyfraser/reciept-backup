@@ -1,9 +1,9 @@
 package com.hadley.receiptbackup.ui.screens
 
 import android.app.Activity
-import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -46,7 +47,7 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
         .filter { it.name.contains(searchQuery, ignoreCase = true) }
         .filter { selectedStore == "All" || it.store == selectedStore }
 
-    val grouped = filteredItems.groupBy {
+    val grouped = filteredItems.sortedByDescending { it.date }.groupBy {
         val month = it.date.month.getDisplayName(TextStyle.FULL, Locale.getDefault())
         val year = it.date.year
         "$month $year"
@@ -186,6 +187,7 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
                                         style = MaterialTheme.typography.titleMedium,
                                         modifier = Modifier
                                             .fillMaxWidth()
+                                            .background(Color.White)
                                             .padding(vertical = 8.dp)
                                     )
                                 }
