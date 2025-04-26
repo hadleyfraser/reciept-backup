@@ -12,7 +12,8 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 fun StoreDropdownField(
     store: String,
     onStoreChange: (String) -> Unit,
-    allStores: List<String>
+    allStores: List<String>,
+    enabled: Boolean
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -22,7 +23,7 @@ fun StoreDropdownField(
 
     ExposedDropdownMenuBox(
         expanded = expanded,
-        onExpandedChange = { expanded = true }
+        onExpandedChange = { if (enabled) expanded = !expanded }
     ) {
         OutlinedTextField(
             value = store,
@@ -38,7 +39,8 @@ fun StoreDropdownField(
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded)
             },
             singleLine = true,
-            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words)
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+            enabled = enabled
         )
 
         if (filteredStores.isNotEmpty()) {

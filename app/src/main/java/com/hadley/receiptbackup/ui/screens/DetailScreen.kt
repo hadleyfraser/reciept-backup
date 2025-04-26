@@ -21,6 +21,7 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
 import com.hadley.receiptbackup.ui.components.LabelValueText
+import com.hadley.receiptbackup.ui.components.ReceiptImage
 import java.text.DecimalFormat
 
 @Composable
@@ -62,37 +63,7 @@ fun DetailScreen(navController: NavController, itemId: String, viewModel: Receip
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            if (!item.imageUrl.isNullOrEmpty()) {
-                val painter = rememberAsyncImagePainter(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(item.imageUrl)
-                        .diskCachePolicy(CachePolicy.ENABLED)
-                        .crossfade(true)
-                        .build()
-                )
-                val state = painter.state
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .clickable {
-                            navController.navigate("image?uri=${Uri.encode(item.imageUrl)}")
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = painter,
-                        contentDescription = "Receipt Image",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                    if (state is AsyncImagePainter.State.Loading) {
-                        CircularProgressIndicator()
-                    }
-                }
-            }
-
+            ReceiptImage(navController, item.imageUrl)
             Text(text = item.name, style = MaterialTheme.typography.headlineSmall)
             LabelValueText("Store", item.store)
             LabelValueText("Date", item.date.toString())

@@ -2,11 +2,8 @@ package com.hadley.receiptbackup.ui.screens
 
 import android.app.DatePickerDialog
 import android.net.Uri
-import android.util.Log
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -25,13 +22,11 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.navigation.NavController
-import coil.compose.rememberAsyncImagePainter
 import com.hadley.receiptbackup.data.model.ReceiptItem
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.ktx.Firebase
-import com.google.firebase.storage.ktx.storage
+import com.hadley.receiptbackup.ui.components.ReceiptImage
 import com.hadley.receiptbackup.ui.components.StoreDropdownField
+import com.hadley.receiptbackup.utils.submitReceipt
 import java.text.DecimalFormat
 import java.time.LocalDate
 import java.util.*
@@ -45,7 +40,6 @@ fun AddEditItemScreen(
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
-    val formatter = remember { DecimalFormat("0.00") }
 
     var name by remember { mutableStateOf(existingItem?.name ?: "") }
     var store by remember { mutableStateOf(existingItem?.store ?: "") }
@@ -75,79 +69,6 @@ fun AddEditItemScreen(
         calendar.get(Calendar.DAY_OF_MONTH)
     )
 
-    fun submit() {
-        val parsedPrice = price.toDoubleOrNull()
-        if (name.isBlank() || store.isBlank() || parsedPrice == null) {
-            Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        isUploading = true
-
-        val onComplete: (String?) -> Unit = { imageUrl ->
-            val formattedPrice = formatter.format(parsedPrice).toDouble()
-            val item = ReceiptItem(
-                id = existingItem?.id ?: "",
-                name = name,
-                store = store,
-                date = date.value,
-                price = formattedPrice,
-                imageUrl = imageUrl ?: existingItem?.imageUrl
-            )
-
-            if (existingItem == null) viewModel.addItem(item)
-            else viewModel.updateItem(context, item)
-
-            isUploading = false
-            navController.popBackStack()
-        }
-
-        if (imageUri != null) {
-            val uid = FirebaseAuth.getInstance().currentUser?.uid
-            if (uid == null) {
-                Toast.makeText(context, "User not signed in", Toast.LENGTH_SHORT).show()
-                isUploading = false
-                return
-            }
-
-            try {
-                val inputStream = context.contentResolver.openInputStream(imageUri!!)
-                if (inputStream == null) {
-                    Toast.makeText(context, "Cannot open selected image", Toast.LENGTH_SHORT).show()
-                    isUploading = false
-                    return
-                }
-                inputStream.close()
-            } catch (e: Exception) {
-                Log.e("AddEditItemScreen", "Image URI error", e)
-                Toast.makeText(context, "Invalid image file", Toast.LENGTH_SHORT).show()
-                isUploading = false
-                return
-            }
-
-            val storage = Firebase.storage
-            val imageRef = storage.reference
-                .child("users/$uid/images/${UUID.randomUUID()}.jpg")
-
-            imageRef.putFile(imageUri!!)
-                .continueWithTask { task ->
-                    if (!task.isSuccessful) {
-                        task.exception?.let { throw it }
-                    }
-                    imageRef.downloadUrl
-                }
-                .addOnSuccessListener { uri ->
-                    onComplete(uri.toString())
-                }
-                .addOnFailureListener { e ->
-                    Log.e("AddEditItemScreen", "Image upload failed", e)
-                    Toast.makeText(context, "Image upload failed", Toast.LENGTH_SHORT).show()
-                    onComplete(null)
-                }
-        } else {
-            onComplete(null)
-        }
-    }
 
     Box(
         modifier = Modifier
@@ -166,16 +87,7 @@ fun AddEditItemScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            if (imageUri != null || existingItem?.imageUrl != null) {
-                val painter = rememberAsyncImagePainter(imageUri ?: existingItem?.imageUrl)
-                Image(
-                    painter = painter,
-                    contentDescription = "Selected image",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(180.dp)
-                )
-            }
+            ReceiptImage(navController, imageUrl = imageUri?.toString() ?: existingItem?.imageUrl)
 
             Button(onClick = { imagePickerLauncher.launch("image/*") }, enabled = !isUploading) {
                 Text("Choose Image")
@@ -193,7 +105,8 @@ fun AddEditItemScreen(
             StoreDropdownField(
                 store = store,
                 onStoreChange = { store = it },
-                allStores = allStores
+                allStores = allStores,
+                enabled = !isUploading
             )
 
             OutlinedTextField(
@@ -232,7 +145,18 @@ fun AddEditItemScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = { submit() },
+                onClick = { submitReceipt(
+                    context = context,
+                    navController = navController,
+                    viewModel = viewModel,
+                    existingItem = existingItem,
+                    name = name,
+                    store = store,
+                    price = price,
+                    date = date.value,
+                    imageUri = imageUri,
+                    setIsUploading = { isUploading = it }
+                )},
                 modifier = Modifier.align(Alignment.End),
                 enabled = !isUploading
             ) {
