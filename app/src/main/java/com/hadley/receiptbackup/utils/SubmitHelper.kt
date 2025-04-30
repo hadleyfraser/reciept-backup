@@ -1,6 +1,8 @@
 package com.hadley.receiptbackup.utils
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.ImageDecoder
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
@@ -9,6 +11,7 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
 import com.hadley.receiptbackup.data.model.ReceiptItem
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
+import java.io.ByteArrayOutputStream
 import java.text.DecimalFormat
 import java.time.LocalDate
 import java.util.*
@@ -80,7 +83,14 @@ fun submitReceipt(
         val imageRef = storage.reference
             .child("users/$uid/images/${UUID.randomUUID()}.jpg")
 
-        imageRef.putFile(imageUri)
+        val source = ImageDecoder.createSource(context.contentResolver, imageUri)
+        val bitmap = ImageDecoder.decodeBitmap(source)
+
+        val outputStream = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 75, outputStream)
+        val compressedBytes = outputStream.toByteArray()
+
+        imageRef.putBytes(compressedBytes)
             .continueWithTask { task ->
                 if (!task.isSuccessful) {
                     task.exception?.let { throw it }
