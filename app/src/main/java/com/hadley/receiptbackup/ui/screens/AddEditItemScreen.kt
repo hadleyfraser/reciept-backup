@@ -28,6 +28,7 @@ import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
 import com.hadley.receiptbackup.ui.components.ReceiptImage
 import com.hadley.receiptbackup.ui.components.StoreDropdownField
 import com.hadley.receiptbackup.utils.submitReceipt
+import com.hadley.receiptbackup.utils.createImagePickerIntent
 import java.text.DecimalFormat
 import java.time.LocalDate
 import java.util.*
@@ -60,9 +61,14 @@ fun AddEditItemScreen(
         items.map { it.store }.distinct().sorted()
     }
 
+    var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
+
     val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? -> imageUri = uri }
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val uri = result.data?.data ?: cameraImageUri
+        imageUri = uri
+    }
 
     val calendar = Calendar.getInstance().apply {
         set(date.value.year, date.value.monthValue - 1, date.value.dayOfMonth)
@@ -76,7 +82,6 @@ fun AddEditItemScreen(
         calendar.get(Calendar.MONTH),
         calendar.get(Calendar.DAY_OF_MONTH)
     )
-
 
     Box(
         modifier = Modifier
@@ -97,7 +102,11 @@ fun AddEditItemScreen(
         ) {
             ReceiptImage(navController, imageUrl = imageUri?.toString() ?: existingItem?.imageUrl)
 
-            Button(onClick = { imagePickerLauncher.launch("image/*") }, enabled = !isUploading) {
+            Button(onClick = {
+                val (intent, outputUri) = createImagePickerIntent(context)
+                cameraImageUri = outputUri
+                imagePickerLauncher.launch(intent)
+            }, enabled = !isUploading) {
                 Text("Choose Image")
             }
 
@@ -145,7 +154,7 @@ fun AddEditItemScreen(
                 Button(onClick = {
                     datePickerDialog.show()
                     focusManager.clearFocus()
-                    }, enabled = !isUploading) {
+                }, enabled = !isUploading) {
                     Text("Pick Date")
                 }
             }
