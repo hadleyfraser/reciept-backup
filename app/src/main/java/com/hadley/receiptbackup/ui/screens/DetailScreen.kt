@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
@@ -17,6 +18,7 @@ import java.text.DecimalFormat
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(navController: NavController, itemId: String, viewModel: ReceiptItemViewModel) {
+    val context = LocalContext.current
     val item = viewModel.getItemById(itemId)
     var showConfirmDialog by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -83,7 +85,7 @@ fun DetailScreen(navController: NavController, itemId: String, viewModel: Receip
             text = { Text("Are you sure you want to delete this receipt? This action cannot be undone.") },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.deleteItem(item.id)
+                    viewModel.deleteItem(context, item.id)
                     showConfirmDialog = false
                     navController.popBackStack()
                 }) {

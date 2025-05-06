@@ -49,7 +49,7 @@ fun submitReceipt(
             imageUrl = imageUrl ?: existingItem?.imageUrl
         )
 
-        if (existingItem == null) viewModel.addItem(item)
+        if (existingItem == null) viewModel.addItem(context, item)
         else viewModel.updateItem(context, item)
 
         setIsUploading(false)

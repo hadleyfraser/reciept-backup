@@ -76,7 +76,7 @@ class ReceiptItemViewModel : ViewModel() {
         ReceiptItemDataStore.clearReceipts(context)
     }
 
-    fun addItem(item: ReceiptItem) {
+    fun addItem(context: Context, item: ReceiptItem) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         Firebase.firestore.collection("users")
             .document(uid)
@@ -85,6 +85,10 @@ class ReceiptItemViewModel : ViewModel() {
             .addOnSuccessListener { docRef ->
                 val withId = item.copy(id = docRef.id)
                 _items.value += withId
+
+                viewModelScope.launch {
+                    ReceiptItemDataStore.saveReceipts(context, _items.value)
+                }
             }
     }
 
@@ -121,10 +125,14 @@ class ReceiptItemViewModel : ViewModel() {
             }
     }
 
-    fun deleteItem(itemId: String) {
+    fun deleteItem(context: Context, itemId: String) {
         val item = _items.value.find { it.id == itemId }
 
         _items.value = _items.value.filterNot { it.id == itemId }
+
+        viewModelScope.launch {
+            ReceiptItemDataStore.saveReceipts(context, _items.value)
+        }
 
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         val db = Firebase.firestore
