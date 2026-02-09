@@ -23,11 +23,17 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import com.hadley.receiptbackup.data.sync.ReceiptSyncWorker
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 class ReceiptItemViewModel : ViewModel() {
     private val _items = MutableStateFlow<List<ReceiptItem>>(emptyList())
@@ -45,7 +51,12 @@ class ReceiptItemViewModel : ViewModel() {
     private val _imageCacheStatus = MutableStateFlow<Map<String, ImageCacheStatus>>(emptyMap())
     val imageCacheStatus: StateFlow<Map<String, ImageCacheStatus>> = _imageCacheStatus
 
+    private val _imageDownloadProgress = MutableStateFlow<Map<String, Int>>(emptyMap())
+    val imageDownloadProgress: StateFlow<Map<String, Int>> = _imageDownloadProgress
+
     private var didResetPendingProgress = false
+
+    private val okHttpClient = OkHttpClient()
 
     fun loadCachedReceipts(context: Context) {
         viewModelScope.launch {
@@ -115,6 +126,15 @@ class ReceiptItemViewModel : ViewModel() {
         ReceiptItemDataStore.clearReceipts(context)
     }
 
+    fun clearCachedImages(context: Context) {
+        _imageCacheStatus.value = emptyMap()
+        _imageDownloadProgress.value = emptyMap()
+        val cacheDir = getImageCacheDir(context)
+        if (cacheDir.exists()) {
+            cacheDir.listFiles()?.forEach { it.delete() }
+        }
+    }
+
     fun addItem(context: Context, item: ReceiptItem) {
         _items.value += item
         viewModelScope.launch {
@@ -172,38 +192,105 @@ class ReceiptItemViewModel : ViewModel() {
             .distinctBy { it.id }
             .forEach { item ->
                 val url = item.imageUrl ?: return@forEach
-                if (isImageCached(imageLoader.diskCache, url) || !item.localImageUri.isNullOrBlank()) {
+                val cachedOnDisk = isImageCached(imageLoader.diskCache, url)
+                val localFileExists = !item.localImageUri.isNullOrBlank() && localFileExists(item.localImageUri)
+                if (cachedOnDisk || localFileExists) {
                     setCacheStatus(item.id, ImageCacheStatus.CACHED)
                     return@forEach
                 }
 
                 setCacheStatus(item.id, ImageCacheStatus.DOWNLOADING)
-
-                val request = ImageRequest.Builder(context)
-                    .data(url)
-                    .diskCacheKey(url)
-                    .diskCachePolicy(CachePolicy.ENABLED)
-                    .listener(
-                        onSuccess = { _, _ -> setCacheStatus(item.id, ImageCacheStatus.CACHED) },
-                        onError = { _, _ -> setCacheStatus(item.id, ImageCacheStatus.NOT_CACHED) }
-                    )
-                    .build()
-                imageLoader.enqueue(request)
+                viewModelScope.launch(Dispatchers.IO) {
+                    runCatching {
+                        val localUri = downloadImageToLocalCache(context, item.id, url)
+                        updateLocalImageUri(context, item.id, localUri)
+                        setCacheStatus(item.id, ImageCacheStatus.CACHED)
+                    }.onFailure {
+                        setCacheStatus(item.id, ImageCacheStatus.NOT_CACHED)
+                        clearDownloadProgress(item.id)
+                    }
+                }
             }
     }
 
-    private fun removeCachedImage(context: Context, data: String?) {
-        if (data.isNullOrBlank()) return
-        val imageLoader = Coil.imageLoader(context)
-        imageLoader.diskCache?.remove(data)
-        imageLoader.memoryCache?.remove(MemoryCache.Key(data))
+    private suspend fun downloadImageToLocalCache(context: Context, itemId: String, url: String): String {
+        return withContext(Dispatchers.IO) {
+            val request = Request.Builder().url(url).build()
+            val cacheFile = File(getImageCacheDir(context), "$itemId.jpg")
+
+            okHttpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    throw IOException("Download failed with code ${response.code}")
+                }
+                val body = response.body ?: throw IOException("Empty response body")
+                val totalBytes = body.contentLength()
+                var downloadedBytes = 0L
+                var lastPercent = 0
+
+                body.byteStream().use { input ->
+                    FileOutputStream(cacheFile).use { output ->
+                        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                        while (true) {
+                            val read = input.read(buffer)
+                            if (read == -1) break
+                            output.write(buffer, 0, read)
+                            downloadedBytes += read
+
+                            if (totalBytes > 0) {
+                                val rawPercent = ((downloadedBytes * 100) / totalBytes).toInt()
+                                val rounded = (rawPercent / 5) * 5
+                                if (rounded >= lastPercent + 5 || rawPercent == 100) {
+                                    lastPercent = if (rawPercent == 100) 100 else rounded
+                                    setDownloadProgress(itemId, lastPercent)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            clearDownloadProgress(itemId)
+            Uri.fromFile(cacheFile).toString()
+        }
+    }
+
+    private fun updateLocalImageUri(context: Context, itemId: String, localUri: String) {
+        val updated = _items.value.map { item ->
+            if (item.id == itemId) item.copy(localImageUri = localUri) else item
+        }
+        _items.value = updated
+        viewModelScope.launch {
+            ReceiptItemDataStore.saveReceipts(context, updated)
+        }
+    }
+
+    private fun getImageCacheDir(context: Context): File {
+        val dir = File(context.cacheDir, "receipt-images")
+        if (!dir.exists()) {
+            dir.mkdirs()
+        }
+        return dir
+    }
+
+    private fun setDownloadProgress(id: String, percent: Int) {
+        _imageDownloadProgress.value = _imageDownloadProgress.value.toMutableMap().apply {
+            this[id] = percent
+        }
+    }
+
+    private fun clearDownloadProgress(id: String) {
+        if (_imageDownloadProgress.value.containsKey(id)) {
+            _imageDownloadProgress.value = _imageDownloadProgress.value.toMutableMap().apply {
+                remove(id)
+            }
+        }
     }
 
     private fun hydrateCacheStatus(context: Context, items: List<ReceiptItem>) {
         val imageLoader = Coil.imageLoader(context)
         items.forEach { item ->
             when {
-                !item.localImageUri.isNullOrBlank() -> {
+                !item.localImageUri.isNullOrBlank() && localFileExists(item.localImageUri) -> {
                     setCacheStatus(item.id, ImageCacheStatus.CACHED)
                 }
                 !item.imageUrl.isNullOrBlank() -> {
@@ -291,6 +378,18 @@ class ReceiptItemViewModel : ViewModel() {
         val uri = Uri.parse(uriString)
         if (uri.scheme != "file") return
         runCatching { File(uri.path ?: return).delete() }
+    }
+
+    private fun removeCachedImage(context: Context, data: String?) {
+        if (data.isNullOrBlank()) return
+        val uri = Uri.parse(data)
+        if (uri.scheme == "file") {
+            deleteLocalFile(data)
+            return
+        }
+        val imageLoader = Coil.imageLoader(context)
+        imageLoader.diskCache?.remove(data)
+        imageLoader.memoryCache?.remove(MemoryCache.Key(data))
     }
 }
 

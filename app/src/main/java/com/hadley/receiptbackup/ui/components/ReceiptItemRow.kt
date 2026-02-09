@@ -28,6 +28,7 @@ fun ReceiptItemRow(
     cacheStatus: ImageCacheStatus?,
     pendingUpload: Boolean,
     uploadProgress: Int?,
+    downloadProgress: Int?,
     onClick: () -> Unit
 ) {
     Card(
@@ -71,6 +72,16 @@ fun ReceiptItemRow(
                                 Icon(
                                     Icons.Outlined.CloudDownload,
                                     contentDescription = "Caching image"
+                                )
+                                val percent = downloadProgress ?: 0
+                                val percentText = if (percent > 0) "$percent%" else "0%"
+                                val percentColor = MaterialTheme.colorScheme.onSurface.copy(
+                                    alpha = if (percent > 0) 1f else 0f
+                                )
+                                Text(
+                                    text = percentText,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = percentColor
                                 )
                             }
                             ImageCacheStatus.FAILED -> {

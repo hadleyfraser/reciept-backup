@@ -43,6 +43,7 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedStore by viewModel.selectedStore.collectAsState()
     val imageCacheStatus by viewModel.imageCacheStatus.collectAsState()
+    val imageDownloadProgress by viewModel.imageDownloadProgress.collectAsState()
 
     val listState = rememberLazyListState()
 
@@ -97,6 +98,7 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
                         coroutineScope.launch {
                             viewModel.clearItems()
                             viewModel.clearLocalCache(activity)
+                            viewModel.clearCachedImages(activity)
 
                             val imageLoader = Coil.imageLoader(activity)
                             imageLoader.diskCache?.clear()
@@ -230,7 +232,8 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
                                         item = item,
                                         cacheStatus = imageCacheStatus[item.id],
                                         pendingUpload = item.pendingUpload,
-                                        uploadProgress = item.uploadProgress
+                                        uploadProgress = item.uploadProgress,
+                                        downloadProgress = imageDownloadProgress[item.id]
                                     ) {
                                         navController.navigate("detail/${item.id}")
                                     }
