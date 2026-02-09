@@ -1,17 +1,18 @@
 package com.hadley.receiptbackup.utils
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.ImageDecoder
 import android.net.Uri
-import android.util.Log
 import android.widget.Toast
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.ktx.Firebase
-import com.google.firebase.storage.ktx.storage
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.hadley.receiptbackup.data.model.ReceiptItem
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
-import java.io.ByteArrayOutputStream
+import com.hadley.receiptbackup.data.sync.ReceiptSyncWorker
+import java.io.File
+import java.io.FileOutputStream
 import java.text.DecimalFormat
 import java.time.LocalDate
 import java.util.*
@@ -38,74 +39,85 @@ fun submitReceipt(
 
     setIsUploading(true)
 
-    val onComplete: (String?) -> Unit = { imageUrl ->
+    val itemId = existingItem?.id ?: UUID.randomUUID().toString()
+    val newLocalImageUri = imageUri?.let { persistLocalImage(context, it) }
+    val effectiveLocalImageUri = newLocalImageUri ?: existingItem?.localImageUri
+
+    val onComplete: (String?) -> Unit = { _ ->
         val formattedPrice = formatter.format(parsedPrice).toDouble()
         val item = ReceiptItem(
-            id = existingItem?.id ?: "",
+            id = itemId,
             name = name,
             store = store,
             date = date,
             price = formattedPrice,
-            imageUrl = imageUrl ?: existingItem?.imageUrl
+            imageUrl = existingItem?.imageUrl,
+            localImageUri = effectiveLocalImageUri,
+            pendingUpload = true,
+            uploadProgress = null
         )
 
         if (existingItem == null) viewModel.addItem(context, item)
         else viewModel.updateItem(context, item)
 
+        enqueueReceiptSync(
+            context = context,
+            item = item,
+            newLocalImageUri = newLocalImageUri,
+            previousImageUrl = if (newLocalImageUri != null) existingItem?.imageUrl else null
+        )
+
         setIsUploading(false)
         onFinish()
     }
 
-    if (imageUri != null) {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid
-        if (uid == null) {
-            Toast.makeText(context, "User not signed in", Toast.LENGTH_SHORT).show()
-            setIsUploading(false)
-            return
-        }
+    onComplete(null)
+}
 
-        try {
-            val inputStream = context.contentResolver.openInputStream(imageUri)
-            if (inputStream == null) {
-                Toast.makeText(context, "Cannot open selected image", Toast.LENGTH_SHORT).show()
-                setIsUploading(false)
-                return
+private fun enqueueReceiptSync(
+    context: Context,
+    item: ReceiptItem,
+    newLocalImageUri: String?,
+    previousImageUrl: String?
+) {
+    val constraints = Constraints.Builder()
+        .setRequiredNetworkType(NetworkType.CONNECTED)
+        .build()
+
+    val payload = ReceiptSyncWorker.Payload(
+        id = item.id,
+        name = item.name,
+        store = item.store,
+        date = item.date,
+        price = item.price,
+        localImageUri = newLocalImageUri,
+        remoteImageUrl = item.imageUrl,
+        previousImageUrl = previousImageUrl
+    )
+
+    val request = OneTimeWorkRequestBuilder<ReceiptSyncWorker>()
+        .setConstraints(constraints)
+        .setInputData(ReceiptSyncWorker.createInputData(payload))
+        .build()
+
+    WorkManager.getInstance(context)
+        .enqueueUniqueWork("receipt-sync-${item.id}", ExistingWorkPolicy.REPLACE, request)
+}
+
+private fun persistLocalImage(context: Context, uri: Uri): String? {
+    return try {
+        val fileName = "receipt_${UUID.randomUUID()}.jpg"
+        val imagesDir = File(context.filesDir, "receipt_images").apply { mkdirs() }
+        val destFile = File(imagesDir, fileName)
+
+        context.contentResolver.openInputStream(uri)?.use { input ->
+            FileOutputStream(destFile).use { output ->
+                input.copyTo(output)
             }
-            inputStream.close()
-        } catch (e: Exception) {
-            Log.e("submitReceipt", "Image URI error", e)
-            Toast.makeText(context, "Invalid image file", Toast.LENGTH_SHORT).show()
-            setIsUploading(false)
-            return
-        }
+        } ?: return null
 
-        val storage = Firebase.storage
-        val imageRef = storage.reference
-            .child("users/$uid/images/${UUID.randomUUID()}.jpg")
-
-        val source = ImageDecoder.createSource(context.contentResolver, imageUri)
-        val bitmap = ImageDecoder.decodeBitmap(source)
-
-        val outputStream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 75, outputStream)
-        val compressedBytes = outputStream.toByteArray()
-
-        imageRef.putBytes(compressedBytes)
-            .continueWithTask { task ->
-                if (!task.isSuccessful) {
-                    task.exception?.let { throw it }
-                }
-                imageRef.downloadUrl
-            }
-            .addOnSuccessListener { uri ->
-                onComplete(uri.toString())
-            }
-            .addOnFailureListener { e ->
-                Log.e("submitReceipt", "Image upload failed", e)
-                Toast.makeText(context, "Image upload failed", Toast.LENGTH_SHORT).show()
-                onComplete(null)
-            }
-    } else {
-        onComplete(null)
+        Uri.fromFile(destFile).toString()
+    } catch (e: Exception) {
+        null
     }
 }

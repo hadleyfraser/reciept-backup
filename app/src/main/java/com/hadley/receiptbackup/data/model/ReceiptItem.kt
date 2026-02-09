@@ -8,7 +8,10 @@ data class ReceiptItem(
     val store: String,
     val date: LocalDate,
     val price: Double,
-    val imageUrl: String? = null
+    val imageUrl: String? = null,
+    val localImageUri: String? = null,
+    val pendingUpload: Boolean = false,
+    val uploadProgress: Int? = null
 )
 
 // 🔁 Convert to Firestore-compatible map
@@ -28,6 +31,9 @@ fun Map<String, Any?>.toReceiptItem(id: String): ReceiptItem {
         store = this["store"] as? String ?: "",
         date = LocalDate.parse(this["date"] as? String ?: ""),
         price = (this["price"] as? Number)?.toDouble() ?: 0.0,
-        imageUrl = this["imageUrl"] as? String
+        imageUrl = this["imageUrl"] as? String,
+        localImageUri = null,
+        pendingUpload = false,
+        uploadProgress = null
     )
 }
