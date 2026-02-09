@@ -23,6 +23,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.navigation.NavController
+import androidx.core.content.FileProvider
+import java.io.File
 import com.hadley.receiptbackup.data.model.ReceiptItem
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
 import com.hadley.receiptbackup.ui.components.ReceiptImage
@@ -31,6 +33,13 @@ import com.hadley.receiptbackup.utils.submitReceipt
 import java.text.DecimalFormat
 import java.time.LocalDate
 import java.util.*
+
+private fun createImageUri(context: android.content.Context): Uri {
+    val imagesDir = File(context.cacheDir, "images").apply { mkdirs() }
+    val imageFile = File.createTempFile("receipt_", ".jpg", imagesDir)
+    val authority = context.packageName + ".fileprovider"
+    return FileProvider.getUriForFile(context, authority, imageFile)
+}
 
 @Composable
 fun AddEditItemScreen(
@@ -53,6 +62,7 @@ fun AddEditItemScreen(
         )
     }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingCameraUri by remember { mutableStateOf<Uri?>(null) }
     var isUploading by remember { mutableStateOf(false) }
     val date = remember { mutableStateOf(existingItem?.date ?: LocalDate.now()) }
     val items by viewModel.items.collectAsState()
@@ -63,6 +73,13 @@ fun AddEditItemScreen(
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? -> imageUri = uri }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) imageUri = pendingCameraUri
+        pendingCameraUri = null
+    }
 
     val calendar = Calendar.getInstance().apply {
         set(date.value.year, date.value.monthValue - 1, date.value.dayOfMonth)
@@ -101,8 +118,28 @@ fun AddEditItemScreen(
                 localImageUri = imageUri?.toString() ?: existingItem?.localImageUri
             )
 
-            Button(onClick = { imagePickerLauncher.launch("image/*") }, enabled = !isUploading) {
-                Text("Choose Image")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = { imagePickerLauncher.launch("image/*") },
+                    enabled = !isUploading,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Choose Image")
+                }
+                Button(
+                    onClick = {
+                        val uri = createImageUri(context)
+                        pendingCameraUri = uri
+                        cameraLauncher.launch(uri)
+                    },
+                    enabled = !isUploading,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Take Photo")
+                }
             }
 
             OutlinedTextField(
