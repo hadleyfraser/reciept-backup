@@ -95,7 +95,11 @@ fun AddEditItemScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            ReceiptImage(navController, imageUrl = imageUri?.toString() ?: existingItem?.imageUrl)
+            ReceiptImage(
+                navController,
+                imageUrl = existingItem?.imageUrl,
+                localImageUri = imageUri?.toString() ?: existingItem?.localImageUri
+            )
 
             Button(onClick = { imagePickerLauncher.launch("image/*") }, enabled = !isUploading) {
                 Text("Choose Image")

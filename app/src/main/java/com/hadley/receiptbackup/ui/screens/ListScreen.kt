@@ -42,6 +42,7 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
     val isLoadingReceipts by viewModel.isLoading.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedStore by viewModel.selectedStore.collectAsState()
+    val imageCacheStatus by viewModel.imageCacheStatus.collectAsState()
 
     val listState = rememberLazyListState()
 
@@ -97,7 +98,9 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
                             viewModel.clearItems()
                             viewModel.clearLocalCache(activity)
 
-                            Coil.imageLoader(activity).diskCache?.clear()
+                            val imageLoader = Coil.imageLoader(activity)
+                            imageLoader.diskCache?.clear()
+                            imageLoader.memoryCache?.clear()
 
                             GoogleAuthManager.signOut(activity, viewModel) {
                                 navController.navigate("landing") {
@@ -223,7 +226,12 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
                                 }
 
                                 items(receipts) { item ->
-                                    ReceiptItemRow(item = item) {
+                                    ReceiptItemRow(
+                                        item = item,
+                                        cacheStatus = imageCacheStatus[item.id],
+                                        pendingUpload = item.pendingUpload,
+                                        uploadProgress = item.uploadProgress
+                                    ) {
                                         navController.navigate("detail/${item.id}")
                                     }
                                 }

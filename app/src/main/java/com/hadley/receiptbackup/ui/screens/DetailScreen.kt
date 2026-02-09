@@ -70,7 +70,7 @@ fun DetailScreen(navController: NavController, itemId: String, viewModel: Receip
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            ReceiptImage(navController, item.imageUrl)
+            ReceiptImage(navController, item.imageUrl, item.localImageUri)
             Text(text = item.name, style = MaterialTheme.typography.headlineSmall)
             LabelValueText("Store", item.store)
             LabelValueText("Date", item.date.toString())

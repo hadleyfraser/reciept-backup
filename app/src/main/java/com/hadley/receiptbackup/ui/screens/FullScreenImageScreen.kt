@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,12 +17,32 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntSize
 import androidx.navigation.NavController
+import coil.request.CachePolicy
+import coil.request.ImageRequest
 import coil.compose.rememberAsyncImagePainter
 
 @Composable
 fun FullScreenImageScreen(navController: NavController, imageUri: String) {
+    val context = LocalContext.current
+    val isRemote = imageUri.startsWith("http://") || imageUri.startsWith("https://")
+
+    val requestBuilder = ImageRequest.Builder(context)
+        .data(imageUri)
+
+    if (isRemote) {
+        requestBuilder
+            .diskCacheKey(imageUri)
+            .diskCachePolicy(CachePolicy.READ_ONLY)
+            .networkCachePolicy(CachePolicy.DISABLED)
+    } else {
+        requestBuilder.diskCachePolicy(CachePolicy.ENABLED)
+    }
+
+    val painter = rememberAsyncImagePainter(requestBuilder.build())
+    val state = painter.state
     var rawScale by remember { mutableStateOf(1f) }
     var offsetX by remember { mutableStateOf(0f) }
     var offsetY by remember { mutableStateOf(0f) }
@@ -73,7 +94,7 @@ fun FullScreenImageScreen(navController: NavController, imageUri: String) {
         contentAlignment = Alignment.Center
     ) {
         Image(
-            painter = rememberAsyncImagePainter(Uri.parse(imageUri)),
+            painter = painter,
             contentDescription = "Full screen image",
             modifier = Modifier
                 .fillMaxSize()
@@ -85,5 +106,8 @@ fun FullScreenImageScreen(navController: NavController, imageUri: String) {
                 ),
             contentScale = ContentScale.Fit
         )
+        if (state is coil.compose.AsyncImagePainter.State.Error && isRemote) {
+            Text("Image not cached", color = Color.White)
+        }
     }
 }
