@@ -37,7 +37,6 @@ import com.hadley.receiptbackup.ui.components.LocalAppScaffoldState
 import com.hadley.receiptbackup.ui.screens.DetailScreen
 import com.hadley.receiptbackup.ui.screens.FullScreenImageScreen
 import com.hadley.receiptbackup.ui.screens.ListScreen
-import com.hadley.receiptbackup.ui.screens.ReportsScreen
 import com.hadley.receiptbackup.ui.screens.SettingsScreen
 import com.hadley.receiptbackup.ui.screens.AddEditLoyaltyCardScreen
 import com.hadley.receiptbackup.ui.screens.LoyaltyCardDetailScreen
@@ -111,10 +110,6 @@ fun MainScaffold(
             ) {
                 composable("list") {
                     ListScreen(navController, viewModel, paddingValues)
-                }
-
-                composable("reports") {
-                    ReportsScreen(navController, viewModel, paddingValues)
                 }
 
                 composable("settings") {

@@ -9,7 +9,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.CreditCard
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DrawerValue
@@ -74,11 +73,6 @@ fun AppDrawerScaffold(
             label = "Cards",
             route = "cards",
             icon = { Icon(Icons.Default.CreditCard, contentDescription = null) }
-        ),
-        DrawerDestination(
-            label = "Reports",
-            route = "reports",
-            icon = { Icon(Icons.Default.Info, contentDescription = null) }
         ),
         DrawerDestination(
             label = "Settings",
