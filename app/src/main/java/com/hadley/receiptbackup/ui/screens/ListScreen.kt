@@ -32,6 +32,7 @@ import com.hadley.receiptbackup.auth.GoogleAuthManager
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
 import com.hadley.receiptbackup.ui.components.AppDrawerScaffold
 import com.hadley.receiptbackup.ui.components.ReceiptItemRow
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.format.TextStyle
 import java.util.*
@@ -87,16 +88,17 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
             IconButton(onClick = {
                 coroutineScope.launch {
                     viewModel.clearItems()
-                    viewModel.clearLocalCache(activity)
-                    viewModel.clearCachedImages(activity)
-
-                    val imageLoader = Coil.imageLoader(activity)
-                    imageLoader.diskCache?.clear()
-                    imageLoader.memoryCache?.clear()
-
                     GoogleAuthManager.signOut(activity, viewModel)
                     navController.navigate("landing") {
                         popUpTo("list") { inclusive = true }
+                    }
+                    launch(Dispatchers.IO) {
+                        viewModel.clearLocalCache(activity)
+                        viewModel.clearCachedImages(activity)
+
+                        val imageLoader = Coil.imageLoader(activity)
+                        imageLoader.diskCache?.clear()
+                        imageLoader.memoryCache?.clear()
                     }
                 }
             }) {
@@ -209,7 +211,7 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
                                         style = MaterialTheme.typography.titleMedium,
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .background(Color.White)
+                                            .background(MaterialTheme.colorScheme.surface)
                                             .padding(vertical = 8.dp)
                                     )
                                 }
