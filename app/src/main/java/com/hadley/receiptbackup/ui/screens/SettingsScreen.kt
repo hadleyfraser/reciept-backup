@@ -1,5 +1,6 @@
 package com.hadley.receiptbackup.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -7,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenu
@@ -24,8 +26,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.hadley.receiptbackup.R
 import com.hadley.receiptbackup.data.local.SettingsDataStore
 import com.hadley.receiptbackup.data.local.ThemeMode
 import com.hadley.receiptbackup.ui.components.AppDrawerScaffold
@@ -42,7 +46,16 @@ fun SettingsScreen(navController: NavController) {
 
     AppDrawerScaffold(
         navController = navController,
-        title = "Settings"
+        title = "Settings",
+        actions = {
+            Image(
+                painter = painterResource(id = R.drawable.logo),
+                contentDescription = "App Logo",
+                modifier = Modifier
+                    .padding(end = 16.dp)
+                    .size(24.dp)
+            )
+        }
     ) { paddingValues: PaddingValues ->
         Column(
             modifier = Modifier

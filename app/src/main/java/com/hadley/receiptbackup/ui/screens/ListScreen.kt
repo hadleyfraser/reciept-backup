@@ -18,7 +18,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -27,6 +26,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.Coil
+import coil.annotation.ExperimentalCoilApi
 import com.hadley.receiptbackup.R
 import com.hadley.receiptbackup.auth.GoogleAuthManager
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
@@ -37,7 +37,7 @@ import kotlinx.coroutines.launch
 import java.time.format.TextStyle
 import java.util.*
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class, ExperimentalCoilApi::class)
 @Composable
 fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
     val items by viewModel.items.collectAsState()
@@ -85,25 +85,41 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
         navController = navController,
         title = "Receipts",
         actions = {
-            IconButton(onClick = {
-                coroutineScope.launch {
-                    viewModel.clearItems()
-                    GoogleAuthManager.signOut(activity, viewModel)
-                    navController.navigate("landing") {
-                        popUpTo("list") { inclusive = true }
-                    }
-                    launch(Dispatchers.IO) {
-                        viewModel.clearLocalCache(activity)
-                        viewModel.clearCachedImages(activity)
+            Image(
+                painter = painterResource(id = R.drawable.logo),
+                contentDescription = "App Logo",
+                modifier = Modifier
+                    .padding(end = 16.dp)
+                    .size(24.dp)
+            )
+        },
+        drawerContent = { closeDrawer ->
+            NavigationDrawerItem(
+                label = { Text("Logout") },
+                selected = false,
+                onClick = {
+                    closeDrawer()
+                    coroutineScope.launch {
+                        viewModel.clearItems()
+                        GoogleAuthManager.signOut(activity, viewModel)
+                        navController.navigate("landing") {
+                            popUpTo("list") { inclusive = true }
+                        }
+                        launch(Dispatchers.IO) {
+                            viewModel.clearLocalCache(activity)
+                            viewModel.clearCachedImages(activity)
 
-                        val imageLoader = Coil.imageLoader(activity)
-                        imageLoader.diskCache?.clear()
-                        imageLoader.memoryCache?.clear()
+                            val imageLoader = Coil.imageLoader(activity)
+                            imageLoader.diskCache?.clear()
+                            imageLoader.memoryCache?.clear()
+                        }
                     }
-                }
-            }) {
-                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout")
-            }
+                },
+                icon = {
+                    Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout")
+                },
+                colors = NavigationDrawerItemDefaults.colors()
+            )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { isSheetOpen = true }) {

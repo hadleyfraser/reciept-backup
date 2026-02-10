@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil.Coil
+import coil.annotation.ExperimentalCoilApi
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
@@ -35,6 +36,7 @@ import java.io.IOException
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
+@OptIn(ExperimentalCoilApi::class)
 class ReceiptItemViewModel : ViewModel() {
     private val _items = MutableStateFlow<List<ReceiptItem>>(emptyList())
     val items: StateFlow<List<ReceiptItem>> = _items

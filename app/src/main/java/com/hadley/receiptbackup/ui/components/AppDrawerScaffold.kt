@@ -46,10 +46,15 @@ fun AppDrawerScaffold(
     modifier: Modifier = Modifier,
     actions: @Composable () -> Unit = {},
     floatingActionButton: @Composable () -> Unit = {},
+    drawerContent: @Composable (closeDrawer: () -> Unit) -> Unit = {},
     content: @Composable (PaddingValues) -> Unit
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
+    val closeDrawer: () -> Unit = {
+        coroutineScope.launch { drawerState.close() }
+        Unit
+    }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
@@ -104,6 +109,7 @@ fun AppDrawerScaffold(
                             colors = NavigationDrawerItemDefaults.colors()
                         )
                     }
+                    drawerContent(closeDrawer)
                 }
             }
         }

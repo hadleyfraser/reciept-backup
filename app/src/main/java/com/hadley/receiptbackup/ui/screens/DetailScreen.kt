@@ -1,5 +1,6 @@
 package com.hadley.receiptbackup.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -8,9 +9,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.hadley.receiptbackup.R
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
+import com.hadley.receiptbackup.ui.components.AppDrawerScaffold
 import com.hadley.receiptbackup.ui.components.LabelValueText
 import com.hadley.receiptbackup.ui.components.ReceiptImage
 import java.text.DecimalFormat
@@ -45,7 +49,18 @@ fun DetailScreen(navController: NavController, itemId: String, viewModel: Receip
         }
     }
 
-    Scaffold(
+    AppDrawerScaffold(
+        navController = navController,
+        title = "Receipt",
+        actions = {
+            Image(
+                painter = painterResource(id = R.drawable.logo),
+                contentDescription = "App Logo",
+                modifier = Modifier
+                    .padding(end = 16.dp)
+                    .size(24.dp)
+            )
+        },
         floatingActionButton = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
