@@ -34,7 +34,7 @@ fun LandingScreen(navController: NavController, viewModel: ReceiptItemViewModel 
                 withContext(Dispatchers.IO) {
                     viewModel.loadCachedReceipts(context)
                 }
-                navController.navigate("list") {
+                navController.navigate("main") {
                     popUpTo("landing") { inclusive = true }
                 }
             } catch (e: Exception) {
@@ -74,7 +74,7 @@ fun LandingScreen(navController: NavController, viewModel: ReceiptItemViewModel 
                             if (user != null) {
                                 viewModel.clearItems()
                                 viewModel.loadReceiptsFromFirestore(context)
-                                navController.navigate("list") {
+                                navController.navigate("main") {
                                     popUpTo("landing") { inclusive = true }
                                 }
                             } else {

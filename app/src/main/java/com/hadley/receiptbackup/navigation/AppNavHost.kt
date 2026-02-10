@@ -3,11 +3,11 @@ package com.hadley.receiptbackup.navigation
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavType
-import androidx.navigation.compose.*
-import androidx.navigation.navArgument
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
-import com.hadley.receiptbackup.ui.screens.*
+import com.hadley.receiptbackup.ui.screens.LandingScreen
 
 @Composable
 fun AppNavHost(
@@ -29,32 +29,8 @@ fun AppNavHost(
                 LandingScreen(navController, receiptItemViewModel)
             }
 
-            composable("list") {
-                ListScreen(navController, receiptItemViewModel)
-            }
-
-            composable("reports") {
-                ReportsScreen(navController, receiptItemViewModel)
-            }
-
-            composable("settings") {
-                SettingsScreen(navController, receiptItemViewModel)
-            }
-
-            composable(
-                route = "detail/{itemId}",
-                arguments = listOf(navArgument("itemId") { type = NavType.StringType })
-            ) { backStackEntry ->
-                val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
-                DetailScreen(navController, itemId, receiptItemViewModel)
-            }
-
-            composable(
-                route = "image?uri={uri}",
-                arguments = listOf(navArgument("uri") { type = NavType.StringType })
-            ) { backStackEntry ->
-                val uri = backStackEntry.arguments?.getString("uri") ?: ""
-                FullScreenImageScreen(navController, uri)
+            composable("main") {
+                MainScaffold(navController, receiptItemViewModel)
             }
         }
     }

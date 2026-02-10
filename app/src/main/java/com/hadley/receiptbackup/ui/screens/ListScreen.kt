@@ -1,8 +1,6 @@
 package com.hadley.receiptbackup.ui.screens
 
-import android.app.Activity
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -11,7 +9,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
@@ -19,27 +16,24 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import coil.Coil
 import coil.annotation.ExperimentalCoilApi
-import com.hadley.receiptbackup.R
-import com.hadley.receiptbackup.auth.GoogleAuthManager
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
-import com.hadley.receiptbackup.ui.components.AppDrawerScaffold
+import com.hadley.receiptbackup.ui.components.LocalAppScaffoldState
 import com.hadley.receiptbackup.ui.components.ReceiptItemRow
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.time.format.TextStyle
 import java.util.*
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class, ExperimentalCoilApi::class)
 @Composable
-fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
+fun ListScreen(
+    navController: NavController,
+    viewModel: ReceiptItemViewModel,
+    paddingValues: PaddingValues
+) {
     val items by viewModel.items.collectAsState()
     val isLoadingReceipts by viewModel.isLoading.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -65,8 +59,18 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
     }
 
     val focusManager = LocalFocusManager.current
-    val activity = LocalContext.current as Activity
-    val coroutineScope = rememberCoroutineScope()
+    val scaffoldState = LocalAppScaffoldState.current
+
+    LaunchedEffect(Unit) {
+        scaffoldState.title = "Receipts"
+        scaffoldState.showTopBar = true
+        scaffoldState.drawerEnabled = true
+        scaffoldState.floatingActionButton = {
+            FloatingActionButton(onClick = { isSheetOpen = true }) {
+                Icon(Icons.Default.Add, contentDescription = "Add Item")
+            }
+        }
+    }
 
     if (isSheetOpen) {
         ModalBottomSheet(
@@ -81,167 +85,120 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
         }
     }
 
-    AppDrawerScaffold(
-        navController = navController,
-        title = "Receipts",
-        actions = {
-            Image(
-                painter = painterResource(id = R.drawable.logo),
-                contentDescription = "App Logo",
-                modifier = Modifier
-                    .padding(end = 16.dp)
-                    .size(24.dp)
-            )
-        },
-        drawerContent = { closeDrawer ->
-            NavigationDrawerItem(
-                label = { Text("Logout") },
-                selected = false,
-                onClick = {
-                    closeDrawer()
-                    coroutineScope.launch {
-                        viewModel.clearItems()
-                        GoogleAuthManager.signOut(activity, viewModel)
-                        navController.navigate("landing") {
-                            popUpTo("list") { inclusive = true }
-                        }
-                        launch(Dispatchers.IO) {
-                            viewModel.clearLocalCache(activity)
-                            viewModel.clearCachedImages(activity)
-
-                            val imageLoader = Coil.imageLoader(activity)
-                            imageLoader.diskCache?.clear()
-                            imageLoader.memoryCache?.clear()
-                        }
-                    }
-                },
-                icon = {
-                    Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout")
-                },
-                colors = NavigationDrawerItemDefaults.colors()
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { isSheetOpen = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Add Item")
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = {
+                    focusManager.clearFocus()
+                })
             }
-        }
-    ) { paddingValues ->
-        Box(
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(Unit) {
-                    detectTapGestures(onTap = {
-                        focusManager.clearFocus()
-                    })
-                }
+                .padding(paddingValues)
+                .padding(16.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(16.dp)
-            ) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { viewModel.updateSearchQuery(it) },
-                    label = { Text("Search by name") },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { viewModel.updateSearchQuery("") }) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Clear search"
-                                )
-                            }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                var expanded by remember { mutableStateOf(false) }
-
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = !expanded }
-                ) {
-                    OutlinedTextField(
-                        readOnly = true,
-                        value = selectedStore,
-                        onValueChange = {},
-                        label = { Text("Filter by store") },
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded)
-                        },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
-                    )
-
-                    ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        stores.forEach { store ->
-                            DropdownMenuItem(
-                                text = { Text(store) },
-                                onClick = {
-                                    viewModel.updateselectedStore(store)
-                                    expanded = false
-                                }
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { viewModel.updateSearchQuery(it) },
+                label = { Text("Search by name") },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.updateSearchQuery("") }) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Clear search"
                             )
                         }
                     }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            var expanded by remember { mutableStateOf(false) }
+
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded }
+            ) {
+                OutlinedTextField(
+                    readOnly = true,
+                    value = selectedStore,
+                    onValueChange = {},
+                    label = { Text("Filter by store") },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded)
+                    },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth()
+                )
+
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    stores.forEach { store ->
+                        DropdownMenuItem(
+                            text = { Text(store) },
+                            onClick = {
+                                viewModel.updateselectedStore(store)
+                                expanded = false
+                            }
+                        )
+                    }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-                when {
-                    isLoadingReceipts -> {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            CircularProgressIndicator()
-                        }
+            when {
+                isLoadingReceipts -> {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator()
                     }
-                    filteredItems.isEmpty() -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(top = 32.dp),
-                            contentAlignment = Alignment.TopCenter
-                        ) {
-                            Text("No receipts saved")
-                        }
+                }
+                filteredItems.isEmpty() -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = 32.dp),
+                        contentAlignment = Alignment.TopCenter
+                    ) {
+                        Text("No receipts saved")
                     }
-                    else -> {
-                        LazyColumn(state = listState) {
-                            grouped.forEach { (monthYear, receipts) ->
-                                stickyHeader {
-                                    Text(
-                                        text = monthYear,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .background(MaterialTheme.colorScheme.surface)
-                                            .padding(vertical = 8.dp)
-                                    )
-                                }
+                }
+                else -> {
+                    LazyColumn(state = listState) {
+                        grouped.forEach { (monthYear, receipts) ->
+                            stickyHeader {
+                                Text(
+                                    text = monthYear,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(MaterialTheme.colorScheme.surface)
+                                        .padding(vertical = 8.dp)
+                                )
+                            }
 
-                                items(receipts) { item ->
-                                    ReceiptItemRow(
-                                        item = item,
-                                        cacheStatus = imageCacheStatus[item.id],
-                                        pendingUpload = item.pendingUpload,
-                                        uploadProgress = item.uploadProgress,
-                                        downloadProgress = imageDownloadProgress[item.id]
-                                    ) {
-                                        navController.navigate("detail/${item.id}")
-                                    }
+                            items(receipts) { item ->
+                                ReceiptItemRow(
+                                    item = item,
+                                    cacheStatus = imageCacheStatus[item.id],
+                                    pendingUpload = item.pendingUpload,
+                                    uploadProgress = item.uploadProgress,
+                                    downloadProgress = imageDownloadProgress[item.id]
+                                ) {
+                                    navController.navigate("detail/${item.id}")
                                 }
                             }
                         }

@@ -47,6 +47,8 @@ fun AppDrawerScaffold(
     actions: @Composable () -> Unit = {},
     floatingActionButton: @Composable () -> Unit = {},
     drawerContent: @Composable (closeDrawer: () -> Unit) -> Unit = {},
+    showTopBar: Boolean = true,
+    drawerEnabled: Boolean = true,
     content: @Composable (PaddingValues) -> Unit
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -112,20 +114,23 @@ fun AppDrawerScaffold(
                     drawerContent(closeDrawer)
                 }
             }
-        }
+        },
+        gesturesEnabled = drawerEnabled
     ) {
         Scaffold(
             modifier = modifier,
             topBar = {
-                TopAppBar(
-                    title = { Text(title) },
-                    navigationIcon = {
-                        IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Open menu")
-                        }
-                    },
-                    actions = { actions() }
-                )
+                if (showTopBar) {
+                    TopAppBar(
+                        title = { Text(title) },
+                        navigationIcon = {
+                            IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
+                                Icon(Icons.Default.Menu, contentDescription = "Open menu")
+                            }
+                        },
+                        actions = { actions() }
+                    )
+                }
             },
             floatingActionButton = floatingActionButton,
             content = content

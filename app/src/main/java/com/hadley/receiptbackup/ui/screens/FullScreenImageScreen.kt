@@ -1,6 +1,5 @@
 package com.hadley.receiptbackup.ui.screens
 
-import android.net.Uri
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -23,10 +22,24 @@ import androidx.navigation.NavController
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.compose.rememberAsyncImagePainter
+import com.hadley.receiptbackup.ui.components.LocalAppScaffoldState
 
 @Composable
-fun FullScreenImageScreen(navController: NavController, imageUri: String) {
+fun FullScreenImageScreen(
+    navController: NavController,
+    imageUri: String,
+    paddingValues: PaddingValues
+) {
     val context = LocalContext.current
+    val scaffoldState = LocalAppScaffoldState.current
+
+    LaunchedEffect(imageUri) {
+        scaffoldState.title = ""
+        scaffoldState.showTopBar = false
+        scaffoldState.drawerEnabled = false
+        scaffoldState.floatingActionButton = {}
+    }
+
     val isRemote = imageUri.startsWith("http://") || imageUri.startsWith("https://")
 
     val requestBuilder = ImageRequest.Builder(context)
@@ -59,6 +72,7 @@ fun FullScreenImageScreen(navController: NavController, imageUri: String) {
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .padding(paddingValues)
             .background(Color.Black)
             .onGloballyPositioned { containerSize = it.size }
             .pointerInput(Unit) {
