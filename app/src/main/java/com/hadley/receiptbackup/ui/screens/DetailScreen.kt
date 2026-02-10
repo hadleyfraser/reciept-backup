@@ -1,10 +1,12 @@
 package com.hadley.receiptbackup.ui.screens
 
+import android.app.Activity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -13,16 +15,23 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.hadley.receiptbackup.R
+import com.hadley.receiptbackup.auth.GoogleAuthManager
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
 import com.hadley.receiptbackup.ui.components.AppDrawerScaffold
 import com.hadley.receiptbackup.ui.components.LabelValueText
 import com.hadley.receiptbackup.ui.components.ReceiptImage
+import coil.Coil
+import coil.annotation.ExperimentalCoilApi
 import java.text.DecimalFormat
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalCoilApi::class)
 @Composable
 fun DetailScreen(navController: NavController, itemId: String, viewModel: ReceiptItemViewModel) {
     val context = LocalContext.current
+    val activity = LocalContext.current as Activity
+    val coroutineScope = rememberCoroutineScope()
     val item = viewModel.getItemById(itemId)
     var showConfirmDialog by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -59,6 +68,34 @@ fun DetailScreen(navController: NavController, itemId: String, viewModel: Receip
                 modifier = Modifier
                     .padding(end = 16.dp)
                     .size(24.dp)
+            )
+        },
+        drawerContent = { closeDrawer ->
+            NavigationDrawerItem(
+                label = { Text("Logout") },
+                selected = false,
+                onClick = {
+                    closeDrawer()
+                    coroutineScope.launch {
+                        viewModel.clearItems()
+                        GoogleAuthManager.signOut(activity, viewModel)
+                        navController.navigate("landing") {
+                            popUpTo("list") { inclusive = true }
+                        }
+                        launch(Dispatchers.IO) {
+                            viewModel.clearLocalCache(activity)
+                            viewModel.clearCachedImages(activity)
+
+                            val imageLoader = Coil.imageLoader(activity)
+                            imageLoader.diskCache?.clear()
+                            imageLoader.memoryCache?.clear()
+                        }
+                    }
+                },
+                icon = {
+                    Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout")
+                },
+                colors = NavigationDrawerItemDefaults.colors()
             )
         },
         floatingActionButton = {

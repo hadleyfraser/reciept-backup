@@ -34,11 +34,11 @@ fun AppNavHost(
             }
 
             composable("reports") {
-                ReportsScreen(navController)
+                ReportsScreen(navController, receiptItemViewModel)
             }
 
             composable("settings") {
-                SettingsScreen(navController)
+                SettingsScreen(navController, receiptItemViewModel)
             }
 
             composable(
