@@ -8,9 +8,6 @@ import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
 import com.hadley.receiptbackup.ui.screens.*
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.asPaddingValues
 
 @Composable
 fun AppNavHost(
@@ -22,7 +19,7 @@ fun AppNavHost(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .padding(WindowInsets.safeDrawing.asPaddingValues()) // ✅ apply insets globally here
+            // removed global safeDrawing padding to avoid double top inset
     ) {
         NavHost(
             navController = navController,
@@ -34,6 +31,14 @@ fun AppNavHost(
 
             composable("list") {
                 ListScreen(navController, receiptItemViewModel)
+            }
+
+            composable("reports") {
+                ReportsScreen(navController)
+            }
+
+            composable("settings") {
+                SettingsScreen(navController)
             }
 
             composable(

@@ -11,9 +11,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,6 +30,7 @@ import coil.Coil
 import com.hadley.receiptbackup.R
 import com.hadley.receiptbackup.auth.GoogleAuthManager
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
+import com.hadley.receiptbackup.ui.components.AppDrawerScaffold
 import com.hadley.receiptbackup.ui.components.ReceiptItemRow
 import kotlinx.coroutines.launch
 import java.time.format.TextStyle
@@ -79,42 +80,28 @@ fun ListScreen(navController: NavController, viewModel: ReceiptItemViewModel) {
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Image(
-                            painter = painterResource(id = R.drawable.logo),
-                            contentDescription = "App Logo",
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Receipts")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = {
-                        coroutineScope.launch {
-                            viewModel.clearItems()
-                            viewModel.clearLocalCache(activity)
-                            viewModel.clearCachedImages(activity)
+    AppDrawerScaffold(
+        navController = navController,
+        title = "Receipts",
+        actions = {
+            IconButton(onClick = {
+                coroutineScope.launch {
+                    viewModel.clearItems()
+                    viewModel.clearLocalCache(activity)
+                    viewModel.clearCachedImages(activity)
 
-                            val imageLoader = Coil.imageLoader(activity)
-                            imageLoader.diskCache?.clear()
-                            imageLoader.memoryCache?.clear()
+                    val imageLoader = Coil.imageLoader(activity)
+                    imageLoader.diskCache?.clear()
+                    imageLoader.memoryCache?.clear()
 
-                            GoogleAuthManager.signOut(activity, viewModel) {
-                                navController.navigate("landing") {
-                                    popUpTo("list") { inclusive = true }
-                                }
-                            }
-                        }
-                    }) {
-                        Icon(Icons.Default.ExitToApp, contentDescription = "Logout")
+                    GoogleAuthManager.signOut(activity, viewModel)
+                    navController.navigate("landing") {
+                        popUpTo("list") { inclusive = true }
                     }
                 }
-            )
+            }) {
+                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout")
+            }
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { isSheetOpen = true }) {
