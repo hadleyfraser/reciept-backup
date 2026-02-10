@@ -6,13 +6,15 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.hadley.receiptbackup.data.repository.LoyaltyCardViewModel
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
 import com.hadley.receiptbackup.ui.screens.LandingScreen
 
 @Composable
 fun AppNavHost(
     modifier: Modifier = Modifier,
-    receiptItemViewModel: ReceiptItemViewModel
+    receiptItemViewModel: ReceiptItemViewModel,
+    loyaltyCardViewModel: LoyaltyCardViewModel
 ) {
     val navController = rememberNavController()
 
@@ -30,7 +32,7 @@ fun AppNavHost(
             }
 
             composable("main") {
-                MainScaffold(navController, receiptItemViewModel)
+                MainScaffold(navController, receiptItemViewModel, loyaltyCardViewModel)
             }
         }
     }

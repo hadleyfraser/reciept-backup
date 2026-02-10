@@ -30,6 +30,7 @@ import coil.annotation.ExperimentalCoilApi
 import com.hadley.receiptbackup.R
 import com.hadley.receiptbackup.auth.GoogleAuthManager
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
+import com.hadley.receiptbackup.data.repository.LoyaltyCardViewModel
 import com.hadley.receiptbackup.ui.components.AppDrawerScaffold
 import com.hadley.receiptbackup.ui.components.AppScaffoldState
 import com.hadley.receiptbackup.ui.components.LocalAppScaffoldState
@@ -38,12 +39,19 @@ import com.hadley.receiptbackup.ui.screens.FullScreenImageScreen
 import com.hadley.receiptbackup.ui.screens.ListScreen
 import com.hadley.receiptbackup.ui.screens.ReportsScreen
 import com.hadley.receiptbackup.ui.screens.SettingsScreen
+import com.hadley.receiptbackup.ui.screens.AddEditLoyaltyCardScreen
+import com.hadley.receiptbackup.ui.screens.LoyaltyCardDetailScreen
+import com.hadley.receiptbackup.ui.screens.LoyaltyCardListScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoilApi::class)
 @Composable
-fun MainScaffold(rootNavController: NavController, viewModel: ReceiptItemViewModel) {
+fun MainScaffold(
+    rootNavController: NavController,
+    viewModel: ReceiptItemViewModel,
+    loyaltyCardViewModel: LoyaltyCardViewModel
+) {
     val activity = LocalContext.current as Activity
     val coroutineScope = rememberCoroutineScope()
     val navController = rememberNavController()
@@ -65,6 +73,7 @@ fun MainScaffold(rootNavController: NavController, viewModel: ReceiptItemViewMod
             floatingActionButton = scaffoldState.floatingActionButton,
             showTopBar = scaffoldState.showTopBar,
             drawerEnabled = scaffoldState.drawerEnabled,
+            snackbarHostState = scaffoldState.snackbarHostState,
             drawerContent = { closeDrawer ->
                 NavigationDrawerItem(
                     label = { Text("Logout") },
@@ -73,6 +82,7 @@ fun MainScaffold(rootNavController: NavController, viewModel: ReceiptItemViewMod
                         closeDrawer()
                         coroutineScope.launch {
                             viewModel.clearItems()
+                            loyaltyCardViewModel.clearCards()
                             GoogleAuthManager.signOut(activity, viewModel)
                             rootNavController.navigate("landing") {
                                 popUpTo("main") { inclusive = true }
@@ -80,6 +90,7 @@ fun MainScaffold(rootNavController: NavController, viewModel: ReceiptItemViewMod
                             launch(Dispatchers.IO) {
                                 viewModel.clearLocalCache(activity)
                                 viewModel.clearCachedImages(activity)
+                                loyaltyCardViewModel.clearLocalCache(activity)
 
                                 val imageLoader = Coil.imageLoader(activity)
                                 imageLoader.diskCache?.clear()
@@ -125,8 +136,31 @@ fun MainScaffold(rootNavController: NavController, viewModel: ReceiptItemViewMod
                     val uri = backStackEntry.arguments?.getString("uri") ?: ""
                     FullScreenImageScreen(navController, uri, paddingValues)
                 }
+
+                composable("cards") {
+                    LoyaltyCardListScreen(navController, loyaltyCardViewModel, paddingValues)
+                }
+
+                composable(
+                    route = "cardDetail/{cardId}",
+                    arguments = listOf(navArgument("cardId") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val cardId = backStackEntry.arguments?.getString("cardId") ?: ""
+                    LoyaltyCardDetailScreen(navController, cardId, loyaltyCardViewModel, paddingValues)
+                }
+
+                composable(
+                    route = "cardEdit?cardId={cardId}",
+                    arguments = listOf(navArgument("cardId") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    })
+                ) { backStackEntry ->
+                    val cardId = backStackEntry.arguments?.getString("cardId")
+                    AddEditLoyaltyCardScreen(navController, loyaltyCardViewModel, cardId, paddingValues)
+                }
             }
         }
     }
 }
-

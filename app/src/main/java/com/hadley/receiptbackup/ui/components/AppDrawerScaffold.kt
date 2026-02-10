@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
@@ -21,6 +22,8 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
@@ -49,6 +52,7 @@ fun AppDrawerScaffold(
     drawerContent: @Composable (closeDrawer: () -> Unit) -> Unit = {},
     showTopBar: Boolean = true,
     drawerEnabled: Boolean = true,
+    snackbarHostState: SnackbarHostState,
     content: @Composable (PaddingValues) -> Unit
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -65,6 +69,11 @@ fun AppDrawerScaffold(
             label = "Receipts",
             route = "list",
             icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null) }
+        ),
+        DrawerDestination(
+            label = "Cards",
+            route = "cards",
+            icon = { Icon(Icons.Default.CreditCard, contentDescription = null) }
         ),
         DrawerDestination(
             label = "Reports",
@@ -92,6 +101,7 @@ fun AppDrawerScaffold(
                     destinations.forEach { destination ->
                         val selected = when (destination.route) {
                             "list" -> currentRoute == "list" || currentRoute?.startsWith("detail/") == true || currentRoute?.startsWith("image") == true
+                            "cards" -> currentRoute == "cards" || currentRoute?.startsWith("cardDetail/") == true || currentRoute?.startsWith("cardEdit") == true
                             else -> currentRoute == destination.route
                         }
                         NavigationDrawerItem(
@@ -133,6 +143,7 @@ fun AppDrawerScaffold(
                 }
             },
             floatingActionButton = floatingActionButton,
+            snackbarHost = { SnackbarHost(snackbarHostState) },
             content = content
         )
     }

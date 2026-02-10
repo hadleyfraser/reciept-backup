@@ -5,6 +5,9 @@
     <!-- 🔌 Required for Internet access (e.g. Firebase, image loading) -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Required for barcode scanning -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"

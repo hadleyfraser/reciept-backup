@@ -1,5 +1,6 @@
 package com.hadley.receiptbackup.ui.components
 
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
@@ -13,9 +14,9 @@ class AppScaffoldState {
     var showTopBar by mutableStateOf(true)
     var drawerEnabled by mutableStateOf(true)
     var floatingActionButton by mutableStateOf<@Composable () -> Unit>({})
+    val snackbarHostState = SnackbarHostState()
 }
 
 val LocalAppScaffoldState = compositionLocalOf<AppScaffoldState> {
     error("LocalAppScaffoldState not provided")
 }
-

@@ -11,6 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import com.hadley.receiptbackup.data.local.SettingsDataStore
 import com.hadley.receiptbackup.data.local.ThemeMode
+import com.hadley.receiptbackup.data.repository.LoyaltyCardViewModel
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
 import com.hadley.receiptbackup.navigation.AppNavHost
 import com.hadley.receiptbackup.ui.theme.AppTheme
@@ -19,6 +20,7 @@ import com.google.firebase.FirebaseApp
 class MainActivity : ComponentActivity() {
 
     private val receiptItemViewModel: ReceiptItemViewModel by viewModels()
+    private val loyaltyCardViewModel: LoyaltyCardViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,7 +34,10 @@ class MainActivity : ComponentActivity() {
 
             AppTheme(themeMode = themeMode) {
                 Surface(color = MaterialTheme.colorScheme.background) {
-                    AppNavHost(receiptItemViewModel = receiptItemViewModel)
+                    AppNavHost(
+                        receiptItemViewModel = receiptItemViewModel,
+                        loyaltyCardViewModel = loyaltyCardViewModel
+                    )
                 }
             }
         }
