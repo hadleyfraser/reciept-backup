@@ -18,6 +18,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Scaffold
@@ -81,6 +83,19 @@ fun AppDrawerScaffold(
         )
     )
 
+    val bottomDestinations = listOf(
+        DrawerDestination(
+            label = "Receipts",
+            route = "list",
+            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null) }
+        ),
+        DrawerDestination(
+            label = "Cards",
+            route = "cards",
+            icon = { Icon(Icons.Default.CreditCard, contentDescription = null) }
+        )
+    )
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -134,6 +149,31 @@ fun AppDrawerScaffold(
                         },
                         actions = { actions() }
                     )
+                }
+            },
+            bottomBar = {
+                NavigationBar {
+                    bottomDestinations.forEach { destination ->
+                        val selected = when (destination.route) {
+                            "list" -> currentRoute == "list" || currentRoute?.startsWith("detail/") == true || currentRoute?.startsWith("image") == true
+                            "cards" -> currentRoute == "cards" || currentRoute?.startsWith("cardDetail/") == true || currentRoute?.startsWith("cardEdit") == true
+                            else -> currentRoute == destination.route
+                        }
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = {
+                                if (!selected) {
+                                    navController.navigate(destination.route) {
+                                        launchSingleTop = true
+                                        restoreState = true
+                                        popUpTo("list") { saveState = true }
+                                    }
+                                }
+                            },
+                            icon = destination.icon,
+                            label = { Text(destination.label) }
+                        )
+                    }
                 }
             },
             floatingActionButton = floatingActionButton,
