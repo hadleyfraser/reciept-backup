@@ -46,8 +46,12 @@ fun barcodeFormatNameFromMlKit(format: Int): String? {
 
 fun createBarcodeBitmap(value: String, formatName: String, width: Int, height: Int): ImageBitmap? {
     val format = barcodeFormatFromName(formatName) ?: return null
-    val matrix = MultiFormatWriter().encode(value, format, width, height)
-    return matrix.toBitmap().asImageBitmap()
+    return try {
+        val matrix = MultiFormatWriter().encode(value, format, width, height)
+        matrix.toBitmap().asImageBitmap()
+    } catch (e: IllegalArgumentException) {
+        null
+    }
 }
 
 fun createBarcodeDimensions(is2d: Boolean): Pair<Int, Int> {

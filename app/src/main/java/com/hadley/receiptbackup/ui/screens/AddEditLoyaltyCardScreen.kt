@@ -118,6 +118,7 @@ fun AddEditLoyaltyCardScreen(
             createBarcodeBitmap(barcodeValue, barcodeType, barcodeWidth, barcodeHeight)
         }
     }
+    val isBarcodeInvalid = barcodeValue.isNotBlank() && barcodeImage == null
 
     val imagePicker = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
@@ -226,35 +227,50 @@ fun AddEditLoyaltyCardScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
-        if (barcodeValue.isNotBlank()) {
+        if (barcodeImage != null) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (barcodeImage != null) {
-                    Image(
-                        bitmap = barcodeImage,
-                        contentDescription = "Barcode preview",
-                        modifier = Modifier.fillMaxWidth()
+                Image(
+                    bitmap = barcodeImage,
+                    contentDescription = "Barcode preview",
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = barcodeValue,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        } else {
+            val helperText = if (isBarcodeInvalid) {
+                "Invalid barcode value"
+            } else {
+                "Enter value to generate barcode"
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant,
+                        RoundedCornerShape(12.dp)
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = barcodeValue,
-                        style = MaterialTheme.typography.bodyMedium
+                        text = "Barcode unavailable",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant,
-                                RoundedCornerShape(12.dp)
-                            )
-                            .padding(24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("Barcode preview unavailable")
-                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = helperText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
