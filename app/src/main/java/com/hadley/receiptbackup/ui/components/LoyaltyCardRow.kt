@@ -12,16 +12,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material3.Card
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.hadley.receiptbackup.data.model.LoyaltyCard
@@ -32,7 +28,6 @@ import com.hadley.receiptbackup.utils.readableTextColor
 fun LoyaltyCardRow(
     card: LoyaltyCard,
     onClick: () -> Unit,
-    showDragHandle: Boolean,
     modifier: Modifier = Modifier
 ) {
     val headerColor = Color(card.coverColor)
@@ -57,13 +52,6 @@ fun LoyaltyCardRow(
                     text = card.name,
                     style = MaterialTheme.typography.titleLarge,
                     color = contentColor
-                )
-            }
-            if (showDragHandle) {
-                Icon(
-                    imageVector = Icons.Default.DragHandle,
-                    contentDescription = "Reorder card",
-                    tint = contentColor.copy(alpha = 0.85f)
                 )
             }
         }

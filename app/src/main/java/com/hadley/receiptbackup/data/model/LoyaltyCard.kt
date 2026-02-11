@@ -9,5 +9,6 @@ data class LoyaltyCard(
     val barcodeType: String,
     val barcodeValue: String,
     val coverColor: Int,
+    val sortOrder: Int = 0,
     val createdAt: Long = System.currentTimeMillis()
 )

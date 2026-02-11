@@ -24,16 +24,32 @@ class LoyaltyCardViewModel : ViewModel() {
     fun loadCards(context: Context) {
         viewModelScope.launch {
             LoyaltyCardDataStore.getCards(context).collectLatest { cached ->
-                _cards.value = cached
+                applyLoadedCards(context, cached, persistIfChanged = false)
             }
         }
         loadCardsFromFirestore(context)
     }
 
     fun addCard(context: Context, card: LoyaltyCard) {
-        _cards.value = _cards.value + card
+        val orderedCard = card.copy(sortOrder = _cards.value.size)
+        _cards.value = _cards.value + orderedCard
         persist(context)
-        saveCardToFirestore(card)
+        saveCardToFirestore(orderedCard)
+    }
+
+    fun moveCard(context: Context, fromId: String, toId: String) {
+        val current = _cards.value.toMutableList()
+        val fromIndex = current.indexOfFirst { it.id == fromId }
+        val toIndex = current.indexOfFirst { it.id == toId }
+        if (fromIndex == -1 || toIndex == -1 || fromIndex == toIndex) return
+        val moved = current.removeAt(fromIndex)
+        current.add(toIndex, moved)
+        val normalized = current.mapIndexed { index, card ->
+            if (card.sortOrder == index) card else card.copy(sortOrder = index)
+        }
+        _cards.value = normalized
+        persist(context)
+        normalized.forEach { saveCardToFirestore(it) }
     }
 
     fun updateCard(context: Context, updated: LoyaltyCard) {
@@ -85,10 +101,7 @@ class LoyaltyCardViewModel : ViewModel() {
                     val data = doc.data ?: emptyMap()
                     mapToLoyaltyCard(data, doc.id)
                 }
-                _cards.value = loadedCards
-                viewModelScope.launch {
-                    LoyaltyCardDataStore.saveCards(context, loadedCards)
-                }
+                applyLoadedCards(context, loadedCards, persistIfChanged = true)
             }
             .addOnFailureListener { e ->
                 Log.e("LoyaltyCardViewModel", "Failed to load cards from Firestore", e)
@@ -116,6 +129,7 @@ class LoyaltyCardViewModel : ViewModel() {
             "barcodeType" to card.barcodeType,
             "barcodeValue" to card.barcodeValue,
             "coverColor" to card.coverColor,
+            "sortOrder" to card.sortOrder,
             "createdAt" to card.createdAt
         )
     }
@@ -126,6 +140,12 @@ class LoyaltyCardViewModel : ViewModel() {
         val barcodeType = data["barcodeType"] as? String ?: ""
         val barcodeValue = data["barcodeValue"] as? String ?: ""
         val coverColor = when (val value = data["coverColor"]) {
+            is Long -> value.toInt()
+            is Int -> value
+            is Double -> value.toInt()
+            else -> 0
+        }
+        val sortOrder = when (val value = data["sortOrder"]) {
             is Long -> value.toInt()
             is Int -> value
             is Double -> value.toInt()
@@ -145,8 +165,35 @@ class LoyaltyCardViewModel : ViewModel() {
             barcodeType = barcodeType,
             barcodeValue = barcodeValue,
             coverColor = coverColor,
+            sortOrder = sortOrder,
             createdAt = createdAt
         )
+    }
+
+    private fun applyLoadedCards(
+        context: Context,
+        loadedCards: List<LoyaltyCard>,
+        persistIfChanged: Boolean
+    ) {
+        val normalized = normalizeSortOrder(loadedCards)
+        _cards.value = normalized
+        if (persistIfChanged && normalized != loadedCards) {
+            persist(context)
+            normalized.forEach { saveCardToFirestore(it) }
+        }
+    }
+
+    private fun normalizeSortOrder(cards: List<LoyaltyCard>): List<LoyaltyCard> {
+        if (cards.isEmpty()) return cards
+        val hasExplicitOrder = cards.any { it.sortOrder != 0 }
+        val ordered = if (hasExplicitOrder) {
+            cards.sortedBy { it.sortOrder }
+        } else {
+            cards
+        }
+        return ordered.mapIndexed { index, card ->
+            if (card.sortOrder == index) card else card.copy(sortOrder = index)
+        }
     }
 
     private fun deleteCardFromFirestore(cardId: String) {
