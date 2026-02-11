@@ -55,15 +55,6 @@ class LoyaltyCardViewModel : ViewModel() {
         persist(context)
     }
 
-    fun reorderCards(context: Context, fromIndex: Int, toIndex: Int) {
-        if (fromIndex == toIndex) return
-        val updated = _cards.value.toMutableList()
-        val moved = updated.removeAt(fromIndex)
-        updated.add(toIndex, moved)
-        _cards.value = updated
-        persist(context)
-    }
-
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
     }
@@ -91,4 +82,3 @@ data class DeletedCard(
     val card: LoyaltyCard,
     val index: Int
 )
-
