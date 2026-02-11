@@ -1,10 +1,14 @@
 package com.hadley.receiptbackup.data.repository
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hadley.receiptbackup.data.local.LoyaltyCardDataStore
 import com.hadley.receiptbackup.data.model.LoyaltyCard
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -23,36 +27,27 @@ class LoyaltyCardViewModel : ViewModel() {
                 _cards.value = cached
             }
         }
+        loadCardsFromFirestore(context)
     }
 
     fun addCard(context: Context, card: LoyaltyCard) {
         _cards.value = _cards.value + card
         persist(context)
+        saveCardToFirestore(card)
     }
 
     fun updateCard(context: Context, updated: LoyaltyCard) {
         _cards.value = _cards.value.map { if (it.id == updated.id) updated else it }
         persist(context)
+        saveCardToFirestore(updated)
     }
 
-    fun deleteCard(context: Context, cardId: String): DeletedCard? {
+    fun deleteCard(context: Context, cardId: String) {
         val index = _cards.value.indexOfFirst { it.id == cardId }
-        if (index == -1) return null
-        val card = _cards.value[index]
+        if (index == -1) return
         _cards.value = _cards.value.filterNot { it.id == cardId }
         persist(context)
-        return DeletedCard(card, index)
-    }
-
-    fun restoreCards(context: Context, deletedCards: List<DeletedCard>) {
-        if (deletedCards.isEmpty()) return
-        val current = _cards.value.toMutableList()
-        deletedCards.sortedBy { it.index }.forEach { deleted ->
-            val safeIndex = deleted.index.coerceIn(0, current.size)
-            current.add(safeIndex, deleted.card)
-        }
-        _cards.value = current
-        persist(context)
+        deleteCardFromFirestore(cardId)
     }
 
     fun updateSearchQuery(query: String) {
@@ -76,9 +71,95 @@ class LoyaltyCardViewModel : ViewModel() {
             LoyaltyCardDataStore.saveCards(context, _cards.value)
         }
     }
-}
 
-data class DeletedCard(
-    val card: LoyaltyCard,
-    val index: Int
-)
+    private fun loadCardsFromFirestore(context: Context) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val firestore = Firebase.firestore
+
+        firestore.collection("users")
+            .document(uid)
+            .collection("cards")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val loadedCards = snapshot.documents.map { doc ->
+                    val data = doc.data ?: emptyMap()
+                    mapToLoyaltyCard(data, doc.id)
+                }
+                _cards.value = loadedCards
+                viewModelScope.launch {
+                    LoyaltyCardDataStore.saveCards(context, loadedCards)
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("LoyaltyCardViewModel", "Failed to load cards from Firestore", e)
+            }
+    }
+
+    private fun saveCardToFirestore(card: LoyaltyCard) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val firestore = Firebase.firestore
+
+        firestore.collection("users")
+            .document(uid)
+            .collection("cards")
+            .document(card.id)
+            .set(cardToFirestoreMap(card))
+            .addOnFailureListener { e ->
+                Log.e("LoyaltyCardViewModel", "Failed to save card ${card.id}", e)
+            }
+    }
+
+    private fun cardToFirestoreMap(card: LoyaltyCard): Map<String, Any?> {
+        return mapOf(
+            "name" to card.name,
+            "notes" to card.notes,
+            "barcodeType" to card.barcodeType,
+            "barcodeValue" to card.barcodeValue,
+            "coverColor" to card.coverColor,
+            "createdAt" to card.createdAt
+        )
+    }
+
+    private fun mapToLoyaltyCard(data: Map<String, Any?>, id: String): LoyaltyCard {
+        val name = data["name"] as? String ?: ""
+        val notes = data["notes"] as? String ?: ""
+        val barcodeType = data["barcodeType"] as? String ?: ""
+        val barcodeValue = data["barcodeValue"] as? String ?: ""
+        val coverColor = when (val value = data["coverColor"]) {
+            is Long -> value.toInt()
+            is Int -> value
+            is Double -> value.toInt()
+            else -> 0
+        }
+        val createdAt = when (val value = data["createdAt"]) {
+            is Long -> value
+            is Int -> value.toLong()
+            is Double -> value.toLong()
+            else -> System.currentTimeMillis()
+        }
+
+        return LoyaltyCard(
+            id = id,
+            name = name,
+            notes = notes,
+            barcodeType = barcodeType,
+            barcodeValue = barcodeValue,
+            coverColor = coverColor,
+            createdAt = createdAt
+        )
+    }
+
+    private fun deleteCardFromFirestore(cardId: String) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val firestore = Firebase.firestore
+
+        firestore.collection("users")
+            .document(uid)
+            .collection("cards")
+            .document(cardId)
+            .delete()
+            .addOnFailureListener { e ->
+                Log.e("LoyaltyCardViewModel", "Failed to delete card $cardId", e)
+            }
+    }
+}

@@ -11,4 +11,3 @@ data class LoyaltyCard(
     val coverColor: Int,
     val createdAt: Long = System.currentTimeMillis()
 )
-
