@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.rememberScrollState
@@ -27,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -42,7 +42,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -75,6 +74,7 @@ import com.hadley.receiptbackup.utils.createBarcodeBitmap
 import com.hadley.receiptbackup.utils.createBarcodeDimensions
 import com.hadley.receiptbackup.utils.scanBarcodeFromImage
 import com.hadley.receiptbackup.utils.supportedBarcodeOptions
+import com.hadley.receiptbackup.utils.readableTextColor
 import kotlinx.coroutines.launch
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -286,15 +286,13 @@ fun AddEditLoyaltyCardScreen(
         Text(text = "Cover color", style = MaterialTheme.typography.titleSmall)
         Button(
             onClick = { showColorPicker = true },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(20.dp)
-                    .background(Color(coverColor), RoundedCornerShape(4.dp))
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(coverColor),
+                contentColor = readableTextColor(Color(coverColor))
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Pick color")
+        ) {
+            Text("Pick colour")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -348,15 +346,13 @@ private fun ColorPickerDialog(
     onConfirm: (Int) -> Unit
 ) {
     val hsv = remember { mutableStateOf(colorIntToHsv(initialColor)) }
-    var alpha by remember { mutableFloatStateOf(colorIntToAlpha(initialColor)) }
     var hexText by remember { mutableStateOf(colorIntToHex(initialColor)) }
     var hexError by remember { mutableStateOf(false) }
     var isEditingHex by remember { mutableStateOf(false) }
 
-    val currentColorInt = remember(hsv.value[0], hsv.value[1], hsv.value[2], alpha) {
-        android.graphics.Color.HSVToColor((alpha * 255f).toInt(), hsv.value)
+    val currentColorInt = remember(hsv.value[0], hsv.value[1], hsv.value[2]) {
+        android.graphics.Color.HSVToColor(hsv.value)
     }
-    val currentColor = remember(currentColorInt) { Color(currentColorInt) }
 
     LaunchedEffect(currentColorInt, isEditingHex) {
         if (!isEditingHex) {
@@ -386,17 +382,7 @@ private fun ColorPickerDialog(
                     onValueChange = { value ->
                         hsv.value = floatArrayOf(hsv.value[0], hsv.value[1], value)
                     },
-                    colors = listOf(Color.Black, hsvToColor(hsv.value, 1f))
-                )
-
-                ColorSlider(
-                    label = "Alpha",
-                    value = alpha,
-                    onValueChange = { value ->
-                        alpha = value
-                    },
-                    colors = listOf(Color.Transparent, currentColor),
-                    showChecker = true
+                    colors = listOf(Color.Black, hsvToColor(hsv.value))
                 )
 
                 OutlinedTextField(
@@ -408,7 +394,6 @@ private fun ColorPickerDialog(
                         if (parsed != null) {
                             val parsedHsv = colorIntToHsv(parsed)
                             hsv.value = parsedHsv
-                            alpha = colorIntToAlpha(parsed)
                             hexError = false
                         } else {
                             hexError = normalized.isNotBlank()
@@ -417,7 +402,7 @@ private fun ColorPickerDialog(
                     label = { Text("Hex") },
                     supportingText = {
                         if (hexError) {
-                            Text("Use #RRGGBB or #AARRGGBB")
+                            Text("Use #RRGGBB")
                         }
                     },
                     isError = hexError,
@@ -598,12 +583,8 @@ private fun colorIntToHsv(color: Int): FloatArray {
     return hsv
 }
 
-private fun colorIntToAlpha(color: Int): Float {
-    return android.graphics.Color.alpha(color) / 255f
-}
-
-private fun hsvToColor(hsv: FloatArray, alpha: Float): Color {
-    val colorInt = android.graphics.Color.HSVToColor((alpha * 255f).toInt(), hsv)
+private fun hsvToColor(hsv: FloatArray): Color {
+    val colorInt = android.graphics.Color.HSVToColor(hsv)
     return Color(colorInt)
 }
 
@@ -619,21 +600,16 @@ private fun handleScanResult(
 private fun parseHexColor(value: String): Int? {
     if (value.isBlank()) return null
     val cleaned = value.removePrefix("#")
-    if (cleaned.length != 6 && cleaned.length != 8) return null
+    if (cleaned.length != 6) return null
     return try {
-        val parsed = cleaned.toLong(16).toInt()
-        if (cleaned.length == 6) {
-            0xFF000000.toInt() or parsed
-        } else {
-            parsed
-        }
+        0xFF000000.toInt() or cleaned.toLong(16).toInt()
     } catch (e: NumberFormatException) {
         null
     }
 }
 
 private fun colorIntToHex(color: Int): String {
-    return "#" + color.toUInt().toString(16).padStart(8, '0').uppercase()
+    return "#" + (color and 0x00FFFFFF).toString(16).padStart(6, '0').uppercase()
 }
 
 private const val defaultCoverColor: Int = 0xFF1565C0.toInt()
