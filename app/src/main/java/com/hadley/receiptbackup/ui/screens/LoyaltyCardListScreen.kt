@@ -22,7 +22,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.consumeAllChanges
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.zIndex
 import androidx.compose.material.icons.Icons
@@ -114,7 +113,13 @@ fun LoyaltyCardListScreen(
                 val dragModifier = if (reorderEnabled) {
                     Modifier
                         .zIndex(if (isDragging) 1f else 0f)
-                        .graphicsLayer { translationY = if (isDragging) dragOffsetY else 0f }
+                        .graphicsLayer {
+                            translationY = if (isDragging) dragOffsetY else 0f
+                            scaleX = if (isDragging) 1.02f else 1f
+                            scaleY = if (isDragging) 1.02f else 1f
+                            shadowElevation = if (isDragging) 12f else 0f
+                            alpha = if (isDragging) 0.98f else 1f
+                        }
                         .pointerInput(card.id, reorderEnabled) {
                             detectDragGesturesAfterLongPress(
                                 onDragStart = {
@@ -130,7 +135,7 @@ fun LoyaltyCardListScreen(
                                     dragOffsetY = 0f
                                 },
                                 onDrag = { change, dragAmount ->
-                                    change.consumeAllChanges()
+                                    change.consume()
                                     if (draggingCardId != card.id) return@detectDragGesturesAfterLongPress
                                     dragOffsetY += dragAmount.y
                                     val currentItem = listState.layoutInfo.visibleItemsInfo
