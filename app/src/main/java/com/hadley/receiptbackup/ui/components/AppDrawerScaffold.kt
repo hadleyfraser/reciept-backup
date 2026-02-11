@@ -1,5 +1,10 @@
 package com.hadley.receiptbackup.ui.components
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -29,9 +34,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import kotlinx.coroutines.launch
@@ -56,6 +63,9 @@ fun AppDrawerScaffold(
     snackbarHostState: SnackbarHostState,
     content: @Composable (PaddingValues) -> Unit
 ) {
+    val context = LocalContext.current
+    val activity = context.findActivity()
+    val dispatcherOwner = LocalOnBackPressedDispatcherOwner.current
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
     val closeDrawer: () -> Unit = {
@@ -64,6 +74,23 @@ fun AppDrawerScaffold(
     }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+
+    val rootRoutes = setOf("list", "cards")
+    val shouldInterceptBack = currentRoute in rootRoutes
+    DisposableEffect(dispatcherOwner, shouldInterceptBack) {
+        val dispatcher = dispatcherOwner?.onBackPressedDispatcher
+        if (dispatcher == null || !shouldInterceptBack) {
+            onDispose { }
+        } else {
+            val callback = object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    activity?.finishAffinity()
+                }
+            }
+            dispatcher.addCallback(callback)
+            onDispose { callback.remove() }
+        }
+    }
 
     val destinations = listOf(
         DrawerDestination(
@@ -122,7 +149,9 @@ fun AppDrawerScaffold(
                                     navController.navigate(destination.route) {
                                         launchSingleTop = true
                                         restoreState = true
-                                        popUpTo("list") { saveState = true }
+                                        if (destination.route != "settings") {
+                                            popUpTo("list") { saveState = true }
+                                        }
                                     }
                                 }
                             },
@@ -181,4 +210,13 @@ fun AppDrawerScaffold(
             content = content
         )
     }
+}
+
+private fun Context.findActivity(): Activity? {
+    var current = this
+    while (current is ContextWrapper) {
+        if (current is Activity) return current
+        current = current.baseContext
+    }
+    return null
 }
