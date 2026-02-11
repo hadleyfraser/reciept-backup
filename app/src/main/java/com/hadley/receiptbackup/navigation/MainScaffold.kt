@@ -1,6 +1,7 @@
 package com.hadley.receiptbackup.navigation
 
 import android.app.Activity
+import androidx.camera.core.ExperimentalGetImage
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
@@ -13,8 +14,12 @@ import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -29,6 +34,7 @@ import coil.Coil
 import coil.annotation.ExperimentalCoilApi
 import com.hadley.receiptbackup.R
 import com.hadley.receiptbackup.auth.GoogleAuthManager
+import com.hadley.receiptbackup.data.local.NavigationPreferences
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
 import com.hadley.receiptbackup.data.repository.LoyaltyCardViewModel
 import com.hadley.receiptbackup.ui.components.AppDrawerScaffold
@@ -43,8 +49,9 @@ import com.hadley.receiptbackup.ui.screens.LoyaltyCardDetailScreen
 import com.hadley.receiptbackup.ui.screens.LoyaltyCardListScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 
-@OptIn(ExperimentalCoilApi::class)
+@OptIn(ExperimentalCoilApi::class, ExperimentalGetImage::class)
 @Composable
 fun MainScaffold(
     rootNavController: NavController,
@@ -52,9 +59,36 @@ fun MainScaffold(
     loyaltyCardViewModel: LoyaltyCardViewModel
 ) {
     val activity = LocalContext.current as Activity
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val navController = rememberNavController()
     val scaffoldState = remember { AppScaffoldState() }
+    val didRestore = remember { mutableStateOf(false) }
+    val persistedRoutes = remember { setOf("list", "cards", "settings") }
+
+    val routeState = remember { mutableStateOf<RouteState>(RouteState.Loading) }
+    LaunchedEffect(context) {
+        val lastRoute = NavigationPreferences.lastRoute(context).first()
+        routeState.value = RouteState.Ready(lastRoute)
+        didRestore.value = true
+    }
+
+    val startDestination = when (val state = routeState.value) {
+        is RouteState.Loading -> null
+        is RouteState.Ready -> {
+            val lastRoute = state.route
+            if (lastRoute != null && lastRoute in persistedRoutes) lastRoute else "list"
+        }
+    }
+
+    LaunchedEffect(navController) {
+        navController.currentBackStackEntryFlow.collect { entry ->
+            val route = entry.destination.route
+            if (didRestore.value && route != null && route in persistedRoutes) {
+                NavigationPreferences.saveLastRoute(context, route)
+            }
+        }
+    }
 
     CompositionLocalProvider(LocalAppScaffoldState provides scaffoldState) {
         AppDrawerScaffold(
@@ -104,9 +138,10 @@ fun MainScaffold(
                 )
             }
         ) { paddingValues: PaddingValues ->
+            val destination = startDestination ?: return@AppDrawerScaffold
             NavHost(
                 navController = navController,
-                startDestination = "list"
+                startDestination = destination
             ) {
                 composable("list") {
                     ListScreen(navController, viewModel, paddingValues)
@@ -158,4 +193,9 @@ fun MainScaffold(
             }
         }
     }
+}
+
+private sealed interface RouteState {
+    data object Loading : RouteState
+    data class Ready(val route: String?) : RouteState
 }
