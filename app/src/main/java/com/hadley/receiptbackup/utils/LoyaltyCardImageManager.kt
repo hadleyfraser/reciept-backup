@@ -3,7 +3,10 @@ package com.hadley.receiptbackup.utils
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.net.Uri
+import kotlin.math.abs
+
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
 import java.io.File
@@ -40,7 +43,8 @@ object LoyaltyCardImageManager {
     }
 
     private suspend fun uploadBitmap(context: Context, cardId: String, original: Bitmap): String {
-        val resized = resize(original)
+        val cropped = trimBackground(original, extractBackgroundColor(original))
+        val resized = resize(cropped)
         val cacheFile = localCacheFile(context, cardId)
         FileOutputStream(cacheFile).use { out ->
             resized.compress(Bitmap.CompressFormat.JPEG, 85, out)
@@ -85,6 +89,30 @@ object LoyaltyCardImageManager {
                 .addOnSuccessListener { cont.resume(Unit) }
                 .addOnFailureListener { cont.resume(Unit) }
         }
+    }
+
+    private fun trimBackground(bitmap: Bitmap, backgroundColor: Int, tolerance: Int = 30): Bitmap {
+        val w = bitmap.width
+        val h = bitmap.height
+        fun isBackground(pixel: Int) =
+            maxOf(
+                abs(Color.red(pixel) - Color.red(backgroundColor)),
+                abs(Color.green(pixel) - Color.green(backgroundColor)),
+                abs(Color.blue(pixel) - Color.blue(backgroundColor))
+            ) <= tolerance
+        var top = h; var bottom = -1; var left = w; var right = -1
+        for (y in 0 until h) {
+            for (x in 0 until w) {
+                if (!isBackground(bitmap.getPixel(x, y))) {
+                    if (y < top) top = y
+                    if (y > bottom) bottom = y
+                    if (x < left) left = x
+                    if (x > right) right = x
+                }
+            }
+        }
+        if (top > bottom || left > right) return bitmap
+        return Bitmap.createBitmap(bitmap, left, top, right - left + 1, bottom - top + 1)
     }
 
     private fun resize(bitmap: Bitmap): Bitmap {
