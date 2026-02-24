@@ -81,7 +81,6 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.okhttp)
-    implementation(libs.mlkit.barcode.scanning)
     implementation(libs.play.services.mlkit.barcode.scanning)
     implementation(libs.zxing.core)
     implementation(libs.androidx.camera.core)
