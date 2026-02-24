@@ -38,6 +38,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Switch
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -104,6 +105,7 @@ fun AddEditLoyaltyCardScreen(
     }
     var barcodeValue by remember { mutableStateOf(existingCard?.barcodeValue ?: "") }
     var coverColor by remember { mutableStateOf(existingCard?.coverColor ?: defaultCoverColor) }
+    var barcodeFullWidth by remember { mutableStateOf(existingCard?.barcodeFullWidth ?: true) }
     var showColorPicker by remember { mutableStateOf(false) }
     var showScanner by remember { mutableStateOf(false) }
     var isScanning by remember { mutableStateOf(false) }
@@ -227,6 +229,23 @@ fun AddEditLoyaltyCardScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text("Display width", style = MaterialTheme.typography.bodyMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("50%", style = MaterialTheme.typography.bodySmall)
+                Switch(
+                    checked = barcodeFullWidth,
+                    onCheckedChange = { barcodeFullWidth = it },
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
+                Text("Full", style = MaterialTheme.typography.bodySmall)
+            }
+        }
+
         if (barcodeImage != null) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -329,7 +348,8 @@ fun AddEditLoyaltyCardScreen(
                             notes = notes.trim(),
                             barcodeType = barcodeType,
                             barcodeValue = barcodeValue.trim(),
-                            coverColor = coverColor
+                            coverColor = coverColor,
+                            barcodeFullWidth = barcodeFullWidth
                         )
                     } else {
                         existingCard.copy(
@@ -337,7 +357,8 @@ fun AddEditLoyaltyCardScreen(
                             notes = notes.trim(),
                             barcodeType = barcodeType,
                             barcodeValue = barcodeValue.trim(),
-                            coverColor = coverColor
+                            coverColor = coverColor,
+                            barcodeFullWidth = barcodeFullWidth
                         )
                     }
                     if (existingCard == null) {
