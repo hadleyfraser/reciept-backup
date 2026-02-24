@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.hadley.receiptbackup.auth.GoogleAuthManager
+import com.hadley.receiptbackup.data.repository.LoyaltyCardViewModel
 import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
 import com.hadley.receiptbackup.R
 import com.hadley.receiptbackup.ui.components.GoogleSignInButton
@@ -22,7 +23,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-fun LandingScreen(navController: NavController, viewModel: ReceiptItemViewModel = viewModel()) {
+fun LandingScreen(
+    navController: NavController,
+    viewModel: ReceiptItemViewModel = viewModel(),
+    loyaltyCardViewModel: LoyaltyCardViewModel = viewModel()
+) {
     val context = LocalContext.current as Activity
     var isLoading by remember { mutableStateOf(true) }
     val coroutineScope = rememberCoroutineScope()
@@ -34,6 +39,7 @@ fun LandingScreen(navController: NavController, viewModel: ReceiptItemViewModel 
                 withContext(Dispatchers.IO) {
                     viewModel.loadCachedReceipts(context)
                 }
+                loyaltyCardViewModel.syncCardImages(context)
                 navController.navigate("main") {
                     popUpTo("landing") { inclusive = true }
                 }
@@ -74,6 +80,7 @@ fun LandingScreen(navController: NavController, viewModel: ReceiptItemViewModel 
                             if (user != null) {
                                 viewModel.clearItems()
                                 viewModel.loadReceiptsFromFirestore(context)
+                                loyaltyCardViewModel.syncCardImages(context)
                                 navController.navigate("main") {
                                     popUpTo("landing") { inclusive = true }
                                 }

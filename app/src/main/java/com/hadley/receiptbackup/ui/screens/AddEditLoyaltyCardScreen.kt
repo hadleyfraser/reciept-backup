@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.rememberScrollState
@@ -24,13 +25,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarDuration
@@ -48,8 +52,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
@@ -60,6 +67,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -70,13 +78,18 @@ import com.hadley.receiptbackup.data.repository.LoyaltyCardViewModel
 import com.hadley.receiptbackup.ui.components.BarcodeScannerDialog
 import com.hadley.receiptbackup.ui.components.LocalAppScaffoldState
 import com.hadley.receiptbackup.utils.BarcodeScanResult
+import com.hadley.receiptbackup.utils.LoyaltyCardImageManager
 import com.hadley.receiptbackup.utils.barcodeOptionFromName
 import com.hadley.receiptbackup.utils.createBarcodeBitmap
 import com.hadley.receiptbackup.utils.createBarcodeDimensions
 import com.hadley.receiptbackup.utils.scanBarcodeFromImage
 import com.hadley.receiptbackup.utils.supportedBarcodeOptions
+import com.hadley.receiptbackup.utils.extractBackgroundColor
 import com.hadley.receiptbackup.utils.readableTextColor
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import android.graphics.BitmapFactory
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.hypot
@@ -106,6 +119,10 @@ fun AddEditLoyaltyCardScreen(
     var barcodeValue by remember { mutableStateOf(existingCard?.barcodeValue ?: "") }
     var coverColor by remember { mutableStateOf(existingCard?.coverColor ?: defaultCoverColor) }
     var barcodeFullWidth by remember { mutableStateOf(existingCard?.barcodeFullWidth ?: true) }
+    var pendingImageUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingImageUrl by remember { mutableStateOf("") }
+    var clearImage by remember { mutableStateOf(false) }
+    var isUploadingImage by remember { mutableStateOf(false) }
     var showColorPicker by remember { mutableStateOf(false) }
     var showScanner by remember { mutableStateOf(false) }
     var isScanning by remember { mutableStateOf(false) }
@@ -134,6 +151,27 @@ fun AddEditLoyaltyCardScreen(
                     barcodeValue = it.value
                 })
                 isScanning = false
+            }
+        }
+    }
+
+    val cardImagePicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            pendingImageUri = uri
+            pendingImageUrl = ""
+            clearImage = false
+            scope.launch(Dispatchers.IO) {
+                val bitmap = context.contentResolver.openInputStream(uri)?.use {
+                    BitmapFactory.decodeStream(it)
+                }
+                if (bitmap != null) {
+                    val color = extractBackgroundColor(bitmap)
+                    withContext(Dispatchers.Main) {
+                        coverColor = color
+                    }
+                }
             }
         }
     }
@@ -318,6 +356,74 @@ fun AddEditLoyaltyCardScreen(
             }
         }
 
+        Text(text = "Card image (optional)", style = MaterialTheme.typography.titleSmall)
+
+        val previewImageData: Any? = when {
+            pendingImageUri != null -> pendingImageUri
+            pendingImageUrl.isNotBlank() -> pendingImageUrl
+            !clearImage && existingCard?.cardImageUrl != null ->
+                LoyaltyCardImageManager.localCacheFile(context, existingCard.id)
+                    .takeIf { it.exists() } ?: existingCard.cardImageUrl
+            else -> null
+        }
+
+        if (previewImageData != null) {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(previewImageData)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Card image preview",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .height(80.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .align(Alignment.CenterStart)
+                )
+                IconButton(
+                    onClick = {
+                        pendingImageUri = null
+                        pendingImageUrl = ""
+                        clearImage = true
+                    },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .size(28.dp)
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = "Remove image")
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(
+                onClick = { cardImagePicker.launch("image/*") },
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(Icons.Default.Image, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Pick image")
+            }
+        }
+
+        OutlinedTextField(
+            value = pendingImageUrl,
+            onValueChange = {
+                pendingImageUrl = it
+                if (it.isNotBlank()) {
+                    pendingImageUri = null
+                    clearImage = false
+                }
+            },
+            label = { Text("Or paste image URL") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+
         Text(text = "Cover color", style = MaterialTheme.typography.titleSmall)
         Button(
             onClick = { showColorPicker = true },
@@ -342,14 +448,44 @@ fun AddEditLoyaltyCardScreen(
                         )
                         return@launch
                     }
+
+                    val cardId = existingCard?.id ?: java.util.UUID.randomUUID().toString()
+
+                    val resolvedImageUrl: String? = try {
+                        isUploadingImage = true
+                        when {
+                            pendingImageUri != null ->
+                                LoyaltyCardImageManager.uploadFromUri(context, cardId, pendingImageUri!!)
+                            pendingImageUrl.isNotBlank() ->
+                                LoyaltyCardImageManager.uploadFromUrl(context, cardId, pendingImageUrl.trim())
+                            clearImage -> {
+                                LoyaltyCardImageManager.deleteLocalCache(context, cardId)
+                                LoyaltyCardImageManager.deleteFromStorage(cardId)
+                                null
+                            }
+                            else -> existingCard?.cardImageUrl
+                        }
+                    } catch (e: Exception) {
+                        isUploadingImage = false
+                        scaffoldState.snackbarHostState.showSnackbar(
+                            message = "Failed to upload image",
+                            duration = SnackbarDuration.Short
+                        )
+                        return@launch
+                    } finally {
+                        isUploadingImage = false
+                    }
+
                     val card = if (existingCard == null) {
                         LoyaltyCard(
+                            id = cardId,
                             name = name.trim(),
                             notes = notes.trim(),
                             barcodeType = barcodeType,
                             barcodeValue = barcodeValue.trim(),
                             coverColor = coverColor,
-                            barcodeFullWidth = barcodeFullWidth
+                            barcodeFullWidth = barcodeFullWidth,
+                            cardImageUrl = resolvedImageUrl
                         )
                     } else {
                         existingCard.copy(
@@ -358,7 +494,8 @@ fun AddEditLoyaltyCardScreen(
                             barcodeType = barcodeType,
                             barcodeValue = barcodeValue.trim(),
                             coverColor = coverColor,
-                            barcodeFullWidth = barcodeFullWidth
+                            barcodeFullWidth = barcodeFullWidth,
+                            cardImageUrl = resolvedImageUrl
                         )
                     }
                     if (existingCard == null) {
@@ -369,9 +506,14 @@ fun AddEditLoyaltyCardScreen(
                     navController.popBackStack()
                 }
             },
+            enabled = !isUploadingImage,
             modifier = Modifier.align(Alignment.End)
         ) {
-            Text(if (existingCard == null) "Save" else "Update")
+            if (isUploadingImage) {
+                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+            } else {
+                Text(if (existingCard == null) "Save" else "Update")
+            }
         }
     }
 }

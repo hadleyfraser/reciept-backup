@@ -9,6 +9,7 @@ import com.hadley.receiptbackup.data.model.LoyaltyCard
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.hadley.receiptbackup.utils.LoyaltyCardImageManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -61,9 +62,29 @@ class LoyaltyCardViewModel : ViewModel() {
     fun deleteCard(context: Context, cardId: String) {
         val index = _cards.value.indexOfFirst { it.id == cardId }
         if (index == -1) return
+        val card = _cards.value[index]
         _cards.value = _cards.value.filterNot { it.id == cardId }
         persist(context)
         deleteCardFromFirestore(cardId)
+        if (card.cardImageUrl != null) {
+            viewModelScope.launch {
+                LoyaltyCardImageManager.deleteLocalCache(context, cardId)
+                LoyaltyCardImageManager.deleteFromStorage(cardId)
+            }
+        }
+    }
+
+    fun syncCardImages(context: Context) {
+        viewModelScope.launch {
+            _cards.value.forEach { card ->
+                val url = card.cardImageUrl ?: return@forEach
+                try {
+                    LoyaltyCardImageManager.downloadToCache(context, card.id, url)
+                } catch (e: Exception) {
+                    Log.w("LoyaltyCardViewModel", "Failed to cache image for card ${card.id}", e)
+                }
+            }
+        }
     }
 
     fun updateSearchQuery(query: String) {
@@ -129,6 +150,8 @@ class LoyaltyCardViewModel : ViewModel() {
             "barcodeType" to card.barcodeType,
             "barcodeValue" to card.barcodeValue,
             "coverColor" to card.coverColor,
+            "barcodeFullWidth" to card.barcodeFullWidth,
+            "cardImageUrl" to card.cardImageUrl,
             "sortOrder" to card.sortOrder,
             "createdAt" to card.createdAt
         )
@@ -157,6 +180,8 @@ class LoyaltyCardViewModel : ViewModel() {
             is Double -> value.toLong()
             else -> System.currentTimeMillis()
         }
+        val barcodeFullWidth = data["barcodeFullWidth"] as? Boolean ?: true
+        val cardImageUrl = data["cardImageUrl"] as? String
 
         return LoyaltyCard(
             id = id,
@@ -165,6 +190,8 @@ class LoyaltyCardViewModel : ViewModel() {
             barcodeType = barcodeType,
             barcodeValue = barcodeValue,
             coverColor = coverColor,
+            barcodeFullWidth = barcodeFullWidth,
+            cardImageUrl = cardImageUrl,
             sortOrder = sortOrder,
             createdAt = createdAt
         )

@@ -28,7 +28,7 @@ fun AppNavHost(
             startDestination = "landing"
         ) {
             composable("landing") {
-                LandingScreen(navController, receiptItemViewModel)
+                LandingScreen(navController, receiptItemViewModel, loyaltyCardViewModel)
             }
 
             composable("main") {
