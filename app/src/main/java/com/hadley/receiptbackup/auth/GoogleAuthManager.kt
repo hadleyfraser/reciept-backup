@@ -11,7 +11,6 @@ import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.*
 import com.hadley.receiptbackup.BuildConfig
-import com.hadley.receiptbackup.data.repository.ReceiptItemViewModel
 import kotlin.coroutines.resume
 import kotlinx.coroutines.suspendCancellableCoroutine
 
@@ -64,14 +63,16 @@ object GoogleAuthManager {
         return FirebaseAuth.getInstance().currentUser
     }
 
-    suspend fun signOut(activity: Activity, viewModel: ReceiptItemViewModel) {
+    fun signOut() {
+        FirebaseAuth.getInstance().signOut()
+    }
+
+    suspend fun clearCredentialState(activity: Activity) {
         val credentialManager = CredentialManager.create(activity)
         try {
             credentialManager.clearCredentialState(ClearCredentialStateRequest())
         } catch (e: GetCredentialException) {
             Log.w("GoogleAuth", "Failed to clear credential state", e)
         }
-        FirebaseAuth.getInstance().signOut()
-        viewModel.clearItems()
     }
 }

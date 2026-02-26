@@ -116,15 +116,15 @@ fun MainScaffold(
                         coroutineScope.launch {
                             viewModel.clearItems()
                             loyaltyCardViewModel.clearCards()
-                            GoogleAuthManager.signOut(activity, viewModel)
+                            GoogleAuthManager.signOut()
                             rootNavController.navigate("landing") {
                                 popUpTo("main") { inclusive = true }
                             }
                             launch(Dispatchers.IO) {
+                                GoogleAuthManager.clearCredentialState(activity)
                                 viewModel.clearLocalCache(activity)
                                 viewModel.clearCachedImages(activity)
                                 loyaltyCardViewModel.clearLocalCache(activity)
-
                                 val imageLoader = Coil.imageLoader(activity)
                                 imageLoader.diskCache?.clear()
                                 imageLoader.memoryCache?.clear()
