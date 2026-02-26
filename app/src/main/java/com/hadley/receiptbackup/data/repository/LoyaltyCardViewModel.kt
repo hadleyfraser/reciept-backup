@@ -123,6 +123,7 @@ class LoyaltyCardViewModel : ViewModel() {
                     mapToLoyaltyCard(data, doc.id)
                 }
                 applyLoadedCards(context, loadedCards, persistIfChanged = true)
+                syncCardImages(context)
             }
             .addOnFailureListener { e ->
                 Log.e("LoyaltyCardViewModel", "Failed to load cards from Firestore", e)

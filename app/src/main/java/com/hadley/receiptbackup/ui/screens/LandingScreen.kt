@@ -39,7 +39,7 @@ fun LandingScreen(
                 withContext(Dispatchers.IO) {
                     viewModel.loadCachedReceipts(context)
                 }
-                loyaltyCardViewModel.syncCardImages(context)
+                loyaltyCardViewModel.loadCards(context)
                 navController.navigate("main") {
                     popUpTo("landing") { inclusive = true }
                 }
@@ -80,7 +80,7 @@ fun LandingScreen(
                             if (user != null) {
                                 viewModel.clearItems()
                                 viewModel.loadReceiptsFromFirestore(context)
-                                loyaltyCardViewModel.syncCardImages(context)
+                                loyaltyCardViewModel.loadCards(context)
                                 navController.navigate("main") {
                                     popUpTo("landing") { inclusive = true }
                                 }
