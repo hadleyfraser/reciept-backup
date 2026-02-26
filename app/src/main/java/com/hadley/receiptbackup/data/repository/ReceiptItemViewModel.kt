@@ -24,11 +24,16 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import com.hadley.receiptbackup.data.sync.ReceiptSyncWorker
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
@@ -59,6 +64,7 @@ class ReceiptItemViewModel : ViewModel() {
     private var didResetPendingProgress = false
 
     private val okHttpClient = OkHttpClient()
+    private val localUriMutex = Mutex()
 
     fun loadCachedReceipts(context: Context) {
         viewModelScope.launch {
@@ -104,13 +110,22 @@ class ReceiptItemViewModel : ViewModel() {
                     val data = doc.data ?: emptyMap()
                     data.toReceiptItem(doc.id)
                 }
-                _items.value = loadedItems
 
-                hydrateCacheStatus(context, loadedItems)
-                prefetchReceiptImages(context, loadedItems)
+                // localImageUri is local-only (not stored in Firestore), so preserve it
+                // from the currently loaded state before overwriting with Firestore data
+                val preserved = _items.value.associateBy { it.id }
+                val mergedItems = loadedItems.map { item ->
+                    val existing = preserved[item.id]
+                    if (existing?.localImageUri != null) item.copy(localImageUri = existing.localImageUri)
+                    else item
+                }
+
+                _items.value = mergedItems
+                hydrateCacheStatus(context, mergedItems)
+                prefetchReceiptImages(context, mergedItems)
 
                 viewModelScope.launch {
-                    ReceiptItemDataStore.saveReceipts(context, loadedItems)
+                    ReceiptItemDataStore.saveReceipts(context, mergedItems)
                 }
                 _isLoading.value = false
             }
@@ -188,8 +203,13 @@ class ReceiptItemViewModel : ViewModel() {
         }
     }
 
+    fun retryMissingImageDownloads(context: Context) {
+        prefetchReceiptImages(context, _items.value)
+    }
+
     private fun prefetchReceiptImages(context: Context, items: List<ReceiptItem>) {
         val imageLoader = Coil.imageLoader(context)
+        val semaphore = Semaphore(10)
         items.filter { !it.imageUrl.isNullOrBlank() }
             .distinctBy { it.id }
             .forEach { item ->
@@ -200,15 +220,27 @@ class ReceiptItemViewModel : ViewModel() {
                     setCacheStatus(item.id, ImageCacheStatus.CACHED)
                     return@forEach
                 }
+                if (_imageCacheStatus.value[item.id] == ImageCacheStatus.DOWNLOADING) {
+                    return@forEach
+                }
 
                 setCacheStatus(item.id, ImageCacheStatus.DOWNLOADING)
                 viewModelScope.launch(Dispatchers.IO) {
-                    runCatching {
-                        val localUri = downloadImageToLocalCache(context, item.id, url)
-                        updateLocalImageUri(context, item.id, localUri)
-                        setCacheStatus(item.id, ImageCacheStatus.CACHED)
-                    }.onFailure {
-                        setCacheStatus(item.id, ImageCacheStatus.NOT_CACHED)
+                    semaphore.withPermit {
+                        var lastError: Exception? = null
+                        for (attempt in 1..3) {
+                            try {
+                                val localUri = downloadImageToLocalCache(context, item.id, url)
+                                updateLocalImageUri(context, item.id, localUri)
+                                setCacheStatus(item.id, ImageCacheStatus.CACHED)
+                                return@withPermit
+                            } catch (e: Exception) {
+                                lastError = e
+                                if (attempt < 3) delay(1000L * attempt)
+                            }
+                        }
+                        Log.e("ReceiptItemViewModel", "Failed to download image after 3 attempts for ${item.id}", lastError)
+                        setCacheStatus(item.id, ImageCacheStatus.FAILED)
                         clearDownloadProgress(item.id)
                     }
                 }
@@ -256,12 +288,12 @@ class ReceiptItemViewModel : ViewModel() {
         }
     }
 
-    private fun updateLocalImageUri(context: Context, itemId: String, localUri: String) {
-        val updated = _items.value.map { item ->
-            if (item.id == itemId) item.copy(localImageUri = localUri) else item
-        }
-        _items.value = updated
-        viewModelScope.launch {
+    private suspend fun updateLocalImageUri(context: Context, itemId: String, localUri: String) {
+        localUriMutex.withLock {
+            val updated = _items.value.map { item ->
+                if (item.id == itemId) item.copy(localImageUri = localUri) else item
+            }
+            _items.value = updated
             ReceiptItemDataStore.saveReceipts(context, updated)
         }
     }
