@@ -323,6 +323,7 @@ class ReceiptItemViewModel : ViewModel() {
     private fun hydrateCacheStatus(context: Context, items: List<ReceiptItem>) {
         val imageLoader = Coil.imageLoader(context)
         items.forEach { item ->
+            if (_imageCacheStatus.value[item.id] == ImageCacheStatus.DOWNLOADING) return@forEach
             when {
                 !item.localImageUri.isNullOrBlank() && localFileExists(item.localImageUri) -> {
                     setCacheStatus(item.id, ImageCacheStatus.CACHED)
