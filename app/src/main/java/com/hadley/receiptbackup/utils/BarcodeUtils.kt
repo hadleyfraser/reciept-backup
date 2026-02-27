@@ -47,8 +47,11 @@ fun barcodeFormatNameFromMlKit(format: Int): String? {
 
 fun createBarcodeBitmap(value: String, formatName: String, width: Int, height: Int): ImageBitmap? {
     val format = barcodeFormatFromName(formatName) ?: return null
+    val option = barcodeOptionFromName(formatName)
     return try {
-        val hints = mapOf(EncodeHintType.MARGIN to 50)
+        // For 1D barcodes, MARGIN is in pixels — 50px gives a proper quiet zone.
+        // For 2D barcodes, MARGIN is in modules, so we leave it at the default (4 modules).
+        val hints = if (option?.is2d == false) mapOf(EncodeHintType.MARGIN to 50) else emptyMap()
         val matrix = MultiFormatWriter().encode(value, format, width, height, hints)
         matrix.toBitmap().asImageBitmap()
     } catch (e: IllegalArgumentException) {
