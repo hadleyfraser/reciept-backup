@@ -10,6 +10,7 @@ import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import com.google.zxing.BarcodeFormat
+import com.google.zxing.EncodeHintType
 import com.google.zxing.MultiFormatWriter
 import com.google.zxing.common.BitMatrix
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -47,7 +48,8 @@ fun barcodeFormatNameFromMlKit(format: Int): String? {
 fun createBarcodeBitmap(value: String, formatName: String, width: Int, height: Int): ImageBitmap? {
     val format = barcodeFormatFromName(formatName) ?: return null
     return try {
-        val matrix = MultiFormatWriter().encode(value, format, width, height)
+        val hints = mapOf(EncodeHintType.MARGIN to 50)
+        val matrix = MultiFormatWriter().encode(value, format, width, height, hints)
         matrix.toBitmap().asImageBitmap()
     } catch (e: IllegalArgumentException) {
         null
