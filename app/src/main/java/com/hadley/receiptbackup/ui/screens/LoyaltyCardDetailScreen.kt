@@ -2,6 +2,8 @@ package com.hadley.receiptbackup.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -104,50 +106,54 @@ fun LoyaltyCardDetailScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 75.dp)
-                .background(headerColor, RoundedCornerShape(8.dp))
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = headerColor)
         ) {
-            if (hasImage) {
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(cacheFile)
-                        .diskCachePolicy(CachePolicy.DISABLED)
-                        .memoryCachePolicy(CachePolicy.ENABLED)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = "Card image",
-                    contentScale = ContentScale.Fit,
-                    modifier = if (card.imageOnly) {
-                        Modifier
-                            .heightIn(max = 32.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                    } else {
-                        Modifier
-                            .size(51.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                    }
-                )
-            }
-            if (!card.imageOnly) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = card.name,
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = headerTextColor
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 75.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (hasImage) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(cacheFile)
+                            .diskCachePolicy(CachePolicy.DISABLED)
+                            .memoryCachePolicy(CachePolicy.ENABLED)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Card image",
+                        contentScale = ContentScale.Fit,
+                        modifier = if (card.imageOnly) {
+                            Modifier
+                                .heightIn(max = 32.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                        } else {
+                            Modifier
+                                .size(51.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                        }
                     )
-                    if (card.notes.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(4.dp))
+                }
+                if (!card.imageOnly) {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = card.notes,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = headerTextColor.copy(alpha = 0.85f)
+                            text = card.name,
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = headerTextColor
                         )
+                        if (card.notes.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = card.notes,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = headerTextColor.copy(alpha = 0.85f)
+                            )
+                        }
                     }
                 }
             }
