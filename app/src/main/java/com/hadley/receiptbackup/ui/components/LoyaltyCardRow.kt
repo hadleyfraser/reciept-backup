@@ -70,17 +70,25 @@ fun LoyaltyCardRow(
                         .build(),
                     contentDescription = "Card image",
                     contentScale = ContentScale.Fit,
-                    modifier = Modifier
-                        .size(51.dp)
-                        .clip(RoundedCornerShape(6.dp))
+                    modifier = if (card.imageOnly) {
+                        Modifier
+                            .heightIn(max = 32.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                    } else {
+                        Modifier
+                            .size(51.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                    }
                 )
             }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = card.name,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = contentColor
-                )
+            if (!card.imageOnly) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = card.name,
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = contentColor
+                    )
+                }
             }
         }
     }

@@ -119,6 +119,7 @@ fun AddEditLoyaltyCardScreen(
     var barcodeValue by remember { mutableStateOf(existingCard?.barcodeValue ?: "") }
     var coverColor by remember { mutableStateOf(existingCard?.coverColor ?: defaultCoverColor) }
     var barcodeFullWidth by remember { mutableStateOf(existingCard?.barcodeFullWidth ?: true) }
+    var imageOnly by remember { mutableStateOf(existingCard?.imageOnly ?: false) }
     var pendingImageUri by remember { mutableStateOf<Uri?>(null) }
     var pendingImageUrl by remember { mutableStateOf("") }
     var clearImage by remember { mutableStateOf(false) }
@@ -424,6 +425,20 @@ fun AddEditLoyaltyCardScreen(
             singleLine = true
         )
 
+        if (previewImageData != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Show image only (hide name)", style = MaterialTheme.typography.bodyMedium)
+                Switch(
+                    checked = imageOnly,
+                    onCheckedChange = { imageOnly = it }
+                )
+            }
+        }
+
         Text(text = "Cover color", style = MaterialTheme.typography.titleSmall)
         Button(
             onClick = { showColorPicker = true },
@@ -485,6 +500,7 @@ fun AddEditLoyaltyCardScreen(
                             barcodeValue = barcodeValue.trim(),
                             coverColor = coverColor,
                             barcodeFullWidth = barcodeFullWidth,
+                            imageOnly = imageOnly,
                             cardImageUrl = resolvedImageUrl
                         )
                     } else {
@@ -495,6 +511,7 @@ fun AddEditLoyaltyCardScreen(
                             barcodeValue = barcodeValue.trim(),
                             coverColor = coverColor,
                             barcodeFullWidth = barcodeFullWidth,
+                            imageOnly = imageOnly,
                             cardImageUrl = resolvedImageUrl
                         )
                     }

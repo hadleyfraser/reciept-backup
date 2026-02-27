@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -106,8 +107,9 @@ fun LoyaltyCardDetailScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(headerColor, RoundedCornerShape(16.dp))
-                .padding(12.dp),
+                .heightIn(min = 75.dp)
+                .background(headerColor, RoundedCornerShape(8.dp))
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -121,24 +123,32 @@ fun LoyaltyCardDetailScreen(
                         .build(),
                     contentDescription = "Card image",
                     contentScale = ContentScale.Fit,
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                    modifier = if (card.imageOnly) {
+                        Modifier
+                            .heightIn(max = 32.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                    } else {
+                        Modifier
+                            .size(51.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                    }
                 )
             }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = card.name,
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = headerTextColor
-                )
-                if (card.notes.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(4.dp))
+            if (!card.imageOnly) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = card.notes,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = headerTextColor.copy(alpha = 0.85f)
+                        text = card.name,
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = headerTextColor
                     )
+                    if (card.notes.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = card.notes,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = headerTextColor.copy(alpha = 0.85f)
+                        )
+                    }
                 }
             }
         }
