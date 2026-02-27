@@ -151,7 +151,6 @@ class LoyaltyCardViewModel : ViewModel() {
             "barcodeType" to card.barcodeType,
             "barcodeValue" to card.barcodeValue,
             "coverColor" to card.coverColor,
-            "barcodeFullWidth" to card.barcodeFullWidth,
             "imageOnly" to card.imageOnly,
             "cardImageUrl" to card.cardImageUrl,
             "sortOrder" to card.sortOrder,
@@ -182,7 +181,6 @@ class LoyaltyCardViewModel : ViewModel() {
             is Double -> value.toLong()
             else -> System.currentTimeMillis()
         }
-        val barcodeFullWidth = data["barcodeFullWidth"] as? Boolean ?: true
         val imageOnly = data["imageOnly"] as? Boolean ?: false
         val cardImageUrl = data["cardImageUrl"] as? String
 
@@ -193,7 +191,6 @@ class LoyaltyCardViewModel : ViewModel() {
             barcodeType = barcodeType,
             barcodeValue = barcodeValue,
             coverColor = coverColor,
-            barcodeFullWidth = barcodeFullWidth,
             imageOnly = imageOnly,
             cardImageUrl = cardImageUrl,
             sortOrder = sortOrder,

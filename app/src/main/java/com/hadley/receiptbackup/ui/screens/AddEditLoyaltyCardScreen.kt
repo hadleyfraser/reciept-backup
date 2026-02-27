@@ -121,7 +121,6 @@ fun AddEditLoyaltyCardScreen(
     }
     var barcodeValue by remember { mutableStateOf(existingCard?.barcodeValue ?: "") }
     var coverColor by remember { mutableStateOf(existingCard?.coverColor ?: defaultCoverColor) }
-    var barcodeFullWidth by remember { mutableStateOf(existingCard?.barcodeFullWidth ?: true) }
     var imageOnly by remember { mutableStateOf(existingCard?.imageOnly ?: false) }
     var pendingImageUri by remember { mutableStateOf<Uri?>(null) }
     var pendingImageUrl by remember { mutableStateOf("") }
@@ -272,23 +271,6 @@ fun AddEditLoyaltyCardScreen(
             label = { Text("Barcode value") },
             modifier = Modifier.fillMaxWidth()
         )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text("Display width", style = MaterialTheme.typography.bodyMedium)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("50%", style = MaterialTheme.typography.bodySmall)
-                Switch(
-                    checked = barcodeFullWidth,
-                    onCheckedChange = { barcodeFullWidth = it },
-                    modifier = Modifier.padding(horizontal = 8.dp)
-                )
-                Text("Full", style = MaterialTheme.typography.bodySmall)
-            }
-        }
 
         if (barcodeImage != null) {
             Column(
@@ -504,7 +486,6 @@ fun AddEditLoyaltyCardScreen(
                             barcodeType = barcodeType,
                             barcodeValue = barcodeValue.trim(),
                             coverColor = coverColor,
-                            barcodeFullWidth = barcodeFullWidth,
                             imageOnly = imageOnly,
                             cardImageUrl = resolvedImageUrl
                         )
@@ -515,7 +496,6 @@ fun AddEditLoyaltyCardScreen(
                             barcodeType = barcodeType,
                             barcodeValue = barcodeValue.trim(),
                             coverColor = coverColor,
-                            barcodeFullWidth = barcodeFullWidth,
                             imageOnly = imageOnly,
                             cardImageUrl = resolvedImageUrl
                         )

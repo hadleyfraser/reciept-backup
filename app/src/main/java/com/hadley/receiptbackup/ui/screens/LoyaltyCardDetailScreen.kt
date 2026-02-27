@@ -183,7 +183,7 @@ fun LoyaltyCardDetailScreen(
                 Image(
                     bitmap = barcodeImage,
                     contentDescription = "Barcode preview",
-                    modifier = if (card.barcodeFullWidth) Modifier.fillMaxWidth() else Modifier.fillMaxWidth(0.5f)
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
