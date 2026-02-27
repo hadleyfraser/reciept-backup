@@ -13,7 +13,9 @@ import java.io.File
 import java.io.FileOutputStream
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 
 object LoyaltyCardImageManager {
 
@@ -33,12 +35,13 @@ object LoyaltyCardImageManager {
     }
 
     suspend fun uploadFromUrl(context: Context, cardId: String, url: String): String {
-        val connection = java.net.URL(url).openConnection().apply {
-            connectTimeout = 10_000
-            readTimeout = 10_000
-        }
-        val bitmap = connection.getInputStream().use { BitmapFactory.decodeStream(it) }
-            ?: throw IllegalArgumentException("Could not download image from URL")
+        val bitmap = withContext(Dispatchers.IO) {
+            val connection = java.net.URL(url).openConnection().apply {
+                connectTimeout = 10_000
+                readTimeout = 10_000
+            }
+            connection.getInputStream().use { BitmapFactory.decodeStream(it) }
+        } ?: throw IllegalArgumentException("Could not download image from URL")
         return uploadBitmap(context, cardId, bitmap)
     }
 
