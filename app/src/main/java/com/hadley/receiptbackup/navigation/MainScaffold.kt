@@ -1,7 +1,7 @@
 package com.hadley.receiptbackup.navigation
 
 import android.app.Activity
-import androidx.camera.core.ExperimentalGetImage
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
@@ -51,7 +51,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
 
-@OptIn(ExperimentalCoilApi::class, ExperimentalGetImage::class)
+@OptIn(ExperimentalCoilApi::class)
 @Composable
 fun MainScaffold(
     rootNavController: NavController,

@@ -40,7 +40,7 @@ fun StoreDropdownField(
             },
             label = { Text("Store") },
             modifier = Modifier
-                .menuAnchor()
+                .menuAnchor(MenuAnchorType.PrimaryEditable)
                 .fillMaxWidth()
                 .onGloballyPositioned { coordinates ->
                     fieldCoordinates.value = coordinates
