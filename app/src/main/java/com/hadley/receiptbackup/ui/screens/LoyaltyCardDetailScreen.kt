@@ -1,5 +1,7 @@
 package com.hadley.receiptbackup.ui.screens
 
+import android.app.Activity
+import android.view.WindowManager
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.material3.Card
@@ -27,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -63,6 +66,19 @@ fun LoyaltyCardDetailScreen(
     val card = viewModel.getCardById(cardId)
     val scaffoldState = LocalAppScaffoldState.current
     var showConfirmDialog by remember { mutableStateOf(false) }
+
+    val window = (context as Activity).window
+    DisposableEffect(Unit) {
+        val originalBrightness = window.attributes.screenBrightness
+        window.attributes = window.attributes.also {
+            it.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL
+        }
+        onDispose {
+            window.attributes = window.attributes.also {
+                it.screenBrightness = originalBrightness
+            }
+        }
+    }
 
     LaunchedEffect(cardId) {
         scaffoldState.title = "Card"
